@@ -1,2 +1,5 @@
 # Ignore local VSCode files
 .vscode/
+
+# Ignore trained model files
+*.pth.tar
