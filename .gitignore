@@ -1,5 +1,12 @@
 # Ignore local VSCode files
 .vscode/
 
+# Ignore pycache
+__pycache__/
+
 # Ignore trained model files
 *.pth.tar
+
+# Ignore images
+*.png
+*.jpg

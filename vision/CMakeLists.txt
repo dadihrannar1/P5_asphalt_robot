@@ -164,8 +164,6 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
-add_executable(work src/now_this.cpp)
-
 #add_executable(pythonyay src/pythontime.py)
 
 
