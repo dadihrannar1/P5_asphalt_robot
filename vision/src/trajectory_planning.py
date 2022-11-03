@@ -362,15 +362,9 @@ def sort_branch(regions):
 
 
 def process_image(img):
-    # Remove holes in image
-    #t1 = time.time()
-    #img = closing(img) # 5 ms
-    #cv2.imshow("Morph", img.astype(np.uint8)*255)
-    #cv2.waitKey(10)
     # Get skeleton
-    
     skeleton = skeletonize(img) # 12 ms
-    # cv2.imwrite("hej.png", (skeleton*255).astype(np.uint8))
+    
     # Extract array with pixels from skeleton
     skeleton_points = np.where(skeleton[:]==1) # 1 ms
     

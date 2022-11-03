@@ -37,7 +37,7 @@ class DataTransfer:
     def __init__(self) -> None:
         self.data = 0
         self.offset = 0
-        self.frameTime = 0
+        self.frame_time = 0
 
     def set_data(self,value):
         self.data = value
@@ -52,15 +52,15 @@ class DataTransfer:
         return self.offset
 
     def set_frame_time(self, value):
-        self.frameTime = value
+        self.frame_time = value
 
     def get_frame_time(self):
-        return self.frameTime
+        return self.frame_time
 
 
 ##Functions to acquire images
 # TODO hook this up to the actual camera
-def frames_from_camerastream(image_out, time_out, lock, event):
+def frames_from_camerastream(data_out, lock, event):
     print('Starting video capture')
     cap = cv2.VideoCapture(capture_src)
 
@@ -80,8 +80,8 @@ def frames_from_camerastream(image_out, time_out, lock, event):
             rval, frame = cap.read()
 
             lock.acquire()
-            image_out.set_data(frame)
-            time_out.set_frame_time(frame_time)
+            data_out.set_data(frame)
+            data_out.set_frame_time(frame_time)
             event.set()
             lock.release()
 
@@ -155,8 +155,6 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
         output = torch.sigmoid(model(data))
         output = torch.squeeze(output)
         preds = (output > 0.5).float()
-        # cv2.imshow("preview", preds.cpu().numpy())
-        # cv2.waitKey(1)
         
         #
         img_raw_old = np.copy(local_image)
@@ -222,11 +220,6 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_in, event_out):
 
 
 def transmit_trajectory(data_in, lock_in, event_in):
-    #serverAddressPort = ("127.0.0.1", 20001)
-    #bufferSize = 1024
-    ## Create a UDP socket on client side
-    #UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-
     # Main thread loop
     print('Thread 4 started (transmit_trajectory)')
     while True:
@@ -250,8 +243,6 @@ def transmit_trajectory(data_in, lock_in, event_in):
                 "Crack": {"DetectionIndex": path[2]} # Boolean (true when a crack starts or ends)
                 }
             #print('Position: (X: ' + str(path[0]) + ', Y: ' + str(path[1]) + ')\nTime: ' + str(local_data.get_frame_time()) + ' Crack: ' + str(path[2]))
-            #data = json.dumps(Data, cls=NpEncoder)
-            #UDPClientSocket.sendto(data.encode(), serverAddressPort)
 
 
 #Visualise cracks for debugging
