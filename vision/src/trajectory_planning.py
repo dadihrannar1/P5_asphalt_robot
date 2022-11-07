@@ -423,6 +423,8 @@ def process_image(img):
 
     return sorted_cracks
 
+
+# Function to calculate the length the robot needs to travel to follow a trajectory
 def calculate_trajectory_length(trajectory, current_pos):
     # Turn trajectory from strings to proper format
     trajectory = np.column_stack([trajectory[:, 0:2].astype(int), np.where(trajectory[:, 2] == 'true', 1, 0)])
