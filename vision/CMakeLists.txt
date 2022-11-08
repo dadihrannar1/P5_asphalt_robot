@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(vision_package)
+project(vision)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -167,7 +167,7 @@ include_directories(
 # )
 
 
-#add_executable(vision src/vision.py)
+#add_executable(vision src/vision_node.py)
 
 
 

@@ -19,7 +19,7 @@ from image_aligner import image_aligner_cpu
 from trajectory_planning import Crack, Frame, map_cracks, process_image
 
 
-from vision_package.msg import vision_out
+from vision.msg import vision_out
 
 
 # Camera source (0 for webcam)
@@ -288,12 +288,15 @@ def visualize(frame: Frame, p1, offset):
     return blank_image
 
 def talker(data_in, lock_in, event_in):
+        print("x")
         pub = rospy.Publisher('custom_chatter', vision_out, queue_size = 10)
         rospy.init_node('custom_talker', anonymous=True)
         r = rospy.Rate(10) #10hz
         while True:
-            event_in.wait()
-            event_in.clear()
+            print("B")
+            #event_in.wait()
+            #event_in.clear()
+            print("y")
 
             # Fetch trajectory
             lock_in.acquire()
@@ -301,9 +304,9 @@ def talker(data_in, lock_in, event_in):
             lock_in.release()
             msg = vision_out()
             msg.x = local_data.path[0]
-            msg.y = local_data.path[1]
-            msg.crack = local_data.path[2]
-            msg.time = local_data.get_frame_time()
+            #msg.y = local_data.path[1]
+            #msg.crack = local_data.path[2]
+            #msg.time = local_data.get_frame_time()
 
             while not rospy.is_shutdown():
                 rospy.loginfo(msg)
@@ -359,6 +362,8 @@ if __name__ == "__main__":
         img_seg_event,
         transmit_event
         ))
+        
+        talker(data_path, path_lock, transmit_event)
 
         t4 = Process(target=transmit_trajectory, args=(
         data_path, 
@@ -367,7 +372,7 @@ if __name__ == "__main__":
         
         ))
 
-        talker(data_path, path_lock, transmit_event)
+        
     except rospy.ROSInterruptException: pass          
 
 
