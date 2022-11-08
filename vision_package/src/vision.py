@@ -19,7 +19,7 @@ from image_aligner import image_aligner_cpu
 from trajectory_planning import Crack, Frame, map_cracks, process_image
 
 
-from vision.msg import vision_out
+from vision_package.msg import vision_out
 
 
 # Camera source (0 for webcam)
