@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import numpy as np
 import cv2
 import time
@@ -16,6 +17,10 @@ from pathlib import Path
 from model_utils import load_model
 from image_aligner import image_aligner_cpu
 from trajectory_planning import Crack, Frame, map_cracks, process_image
+
+
+from vision.msg import vision_out
+
 
 # Camera source (0 for webcam)
 capture_src = 0
@@ -282,6 +287,107 @@ def visualize(frame: Frame, p1, offset):
         
     return blank_image
 
+def talker(data_in, lock_in, event_in):
+        pub = rospy.Publisher('custom_chatter', vision_out, queue_size = 10)
+        rospy.init_node('custom_talker', anonymous=True)
+        r = rospy.Rate(10) #10hz
+        while True:
+            event_in.wait()
+            event_in.clear()
+
+            # Fetch trajectory
+            lock_in.acquire()
+            local_data = data_in.get_data()
+            lock_in.release()
+            msg = vision_out()
+            msg.x = local_data.path[0]
+            msg.y = local_data.path[1]
+            msg.crack = local_data.path[2]
+            msg.time = local_data.get_frame_time()
+
+            while not rospy.is_shutdown():
+                rospy.loginfo(msg)
+                pub.publish(msg)
+                r.sleep()
+
+
+if __name__ == "__main__":
+    
+    try:
+        BaseManager.register('DataTransfer', DataTransfer)
+
+        # Locks
+        img_raw_lock = Lock()
+        img_seg_lock = Lock()
+        path_lock = Lock()
+
+        # Events
+        img_raw_event = Event()     # Start thread 2
+        img_seg_event = Event()     # Start thread 3
+        transmit_event = Event()    # Start thread 4
+        
+        # Manager setup
+        manager_raw_img = BaseManager()
+        manager_seg_img = BaseManager()
+        manager_path = BaseManager()
+        
+        manager_raw_img.start()
+        manager_seg_img.start()
+        manager_path.start()
+        
+        data_raw_img = manager_raw_img.DataTransfer()
+        data_seg_img = manager_seg_img.DataTransfer()
+        data_path = manager_path.DataTransfer()
+
+        t1 = Process(target=frames_from_files, args=(
+        data_raw_img,
+        img_raw_lock,
+        img_raw_event
+        ))
+        t2 = Process(target=run_model, args=(
+        data_raw_img, 
+        data_seg_img,  
+        img_raw_lock, 
+        img_seg_lock, 
+        img_raw_event,
+        img_seg_event,))
+        t3 = Process(target=path_planning, args=(
+        data_seg_img, 
+        data_path, 
+        img_seg_lock,
+        path_lock,
+        img_seg_event,
+        transmit_event
+        ))
+
+        t4 = Process(target=transmit_trajectory, args=(
+        data_path, 
+        path_lock, 
+        transmit_event
+        
+        ))
+
+        talker(data_path, path_lock, transmit_event)
+    except rospy.ROSInterruptException: pass          
+
+
+
+    # Thread initialization
+
+
+
+    
+
+    # Start processes and join datatransmission
+    processes = [t1,t2,t3,t4]
+
+    for process in processes:
+        process.start()
+
+    for process in processes:
+        process.join()
+
+"""
 
 if __name__ == "__main__":
     BaseManager.register('DataTransfer', DataTransfer)
@@ -344,3 +450,4 @@ if __name__ == "__main__":
 
     for process in processes:
         process.join()
+"""

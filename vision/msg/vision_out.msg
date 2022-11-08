@@ -1,4 +1,4 @@
-float32 x
-float32 y
+string x
+string y
 bool crack
-float32 time
+string time
