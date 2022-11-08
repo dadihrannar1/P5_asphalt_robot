@@ -224,30 +224,6 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_in, event_out):
         cv2.waitKey(10)
 
 
-def transmit_trajectory(data_in, lock_in, event_in):
-    # Main thread loop
-    print('Thread 4 started (transmit_trajectory)')
-    while True:
-        # Wait for event flag for new trajectory
-        event_in.wait()
-        event_in.clear()
-
-        # Fetch trajectory
-        lock_in.acquire()
-        local_data = data_in.get_data()
-        lock_in.release()
-        
-        # Send each 
-        for path in local_data.path:
-            Data = {
-                "Position": {
-                     "X": path[0],
-                     "Y": path[1]
-                    },
-                "Time": {"Detected": local_data.get_frame_time()},
-                "Crack": {"DetectionIndex": path[2]} # Boolean (true when a crack starts or ends)
-                }
-            #print('Position: (X: ' + str(path[0]) + ', Y: ' + str(path[1]) + ')\nTime: ' + str(local_data.get_frame_time()) + ' Crack: ' + str(path[2]))
 
 
 #Visualise cracks for debugging
@@ -287,29 +263,131 @@ def visualize(frame: Frame, p1, offset):
         
     return blank_image
 
-def talker():#data_in, lock_in, event_in):
+
+"""
+def transmit_trajectory(data_in, lock_in, event_in):
+    # Main thread loop
+    print('Thread 4 started (transmit_trajectory)')
+    while True:
+        # Wait for event flag for new trajectory
+        event_in.wait()
+        event_in.clear()
+
+        # Fetch trajectory
+        lock_in.acquire()
+        local_data = data_in.get_data()
+        lock_in.release()
+        
+        # Send each 
+        for path in local_data.path:
+            Data = {
+                "Position": {
+                     "X": path[0],
+                     "Y": path[1]
+                    },
+                "Time": {"Detected": local_data.get_frame_time()},
+                "Crack": {"DetectionIndex": path[2]} # Boolean (true when a crack starts or ends)
+                }
+            #print('Position: (X: ' + str(path[0]) + ', Y: ' + str(path[1]) + ')\nTime: ' + str(local_data.get_frame_time()) + ' Crack: ' + str(path[2]))
+"""
+
+def vision_pub(data_in, lock_in, event_in):
         print("x")
         rospy.init_node('vision_information', anonymous=True)
         pub = rospy.Publisher('vision_publisher', vision_out, queue_size = 10)
-        r = rospy.Rate(10) #10hz
+        r = rospy.Rate(100) #100hz
         msg = vision_out()
 
         while not rospy.is_shutdown():
+            print("D")
+            # Wait for event flag for new trajectory
+            event_in.wait()
+            event_in.clear()
+            print("G")
+
+            # Fetch trajectory
+            lock_in.acquire()
+            local_data = data_in.get_data()
+            lock_in.release()
             
-            msg.x = 1
-            pub.publish(msg)
-            rospy.loginfo(msg)
-            r.sleep()
+            # Send each 
+            for path in local_data.path:
+                msg.x = path[0]
+                msg.y = path[1]
+                msg.crack = path[2]
+                pub.publish(msg)
+                rospy.loginfo(msg)
+                r.sleep()
+
+
+
+
 
 
 if __name__ == "__main__":
+    BaseManager.register('DataTransfer', DataTransfer)
+
+    # Locks
+    img_raw_lock = Lock()
+    img_seg_lock = Lock()
+    path_lock = Lock()
+
+    # Events
+    img_raw_event = Event()     # Start thread 2
+    img_seg_event = Event()     # Start thread 3
+    transmit_event = Event()    # Start thread 4
     
-    try:
+    # Manager setup
+    manager_raw_img = BaseManager()
+    manager_seg_img = BaseManager()
+    manager_path = BaseManager()
+    
+    manager_raw_img.start()
+    manager_seg_img.start()
+    manager_path.start()
+    
+    data_raw_img = manager_raw_img.DataTransfer()
+    data_seg_img = manager_seg_img.DataTransfer()
+    data_path = manager_path.DataTransfer()
 
-        talker()#data_path, path_lock, transmit_event)
+    # Thread initialization
+    t1 = Process(target=frames_from_files, args=(
+        data_raw_img,
+        img_raw_lock,
+        img_raw_event
+        ))
+    t2 = Process(target=run_model, args=(
+        data_raw_img, 
+        data_seg_img,  
+        img_raw_lock, 
+        img_seg_lock, 
+        img_raw_event,
+        img_seg_event,))
+    t3 = Process(target=path_planning, args=(
+        data_seg_img, 
+        data_path, 
+        img_seg_lock,
+        path_lock,
+        img_seg_event,
+        transmit_event
+        ))
+    t4 = Process(target=vision_pub, args=(
+        data_path, 
+        path_lock, 
+        transmit_event
+        ))
 
-    except rospy.ROSInterruptException: 
-        pass          
+    # Start processes and join datatransmission
+    processes = [t1,t2,t3,t4]
+
+    for process in processes:
+        process.start()
+
+    for process in processes:
+        process.join()   
+
+
+          
 
 
 

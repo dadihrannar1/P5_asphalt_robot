@@ -1,1 +1,3 @@
-string x
+int32 x
+int32 y
+bool crack
