@@ -187,7 +187,6 @@ include_directories(
 # )
 
 catkin_install_python(PROGRAMS
-
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

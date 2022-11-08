@@ -287,93 +287,29 @@ def visualize(frame: Frame, p1, offset):
         
     return blank_image
 
-def talker(data_in, lock_in, event_in):
+def talker():#data_in, lock_in, event_in):
         print("x")
-        pub = rospy.Publisher('custom_chatter', vision_out, queue_size = 10)
-        rospy.init_node('custom_talker', anonymous=True)
+        rospy.init_node('vision_information', anonymous=True)
+        pub = rospy.Publisher('vision_publisher', vision_out, queue_size = 10)
         r = rospy.Rate(10) #10hz
-        while True:
-            print("B")
-            #event_in.wait()
-            #event_in.clear()
-            print("y")
+        msg = vision_out()
 
-            # Fetch trajectory
-            lock_in.acquire()
-            local_data = data_in.get_data()
-            lock_in.release()
-            msg = vision_out()
-            msg.x = local_data.path[0]
-            #msg.y = local_data.path[1]
-            #msg.crack = local_data.path[2]
-            #msg.time = local_data.get_frame_time()
-
-            while not rospy.is_shutdown():
-                rospy.loginfo(msg)
-                pub.publish(msg)
-                r.sleep()
+        while not rospy.is_shutdown():
+            
+            msg.x = 1
+            pub.publish(msg)
+            rospy.loginfo(msg)
+            r.sleep()
 
 
 if __name__ == "__main__":
     
     try:
-        BaseManager.register('DataTransfer', DataTransfer)
 
-        # Locks
-        img_raw_lock = Lock()
-        img_seg_lock = Lock()
-        path_lock = Lock()
+        talker()#data_path, path_lock, transmit_event)
 
-        # Events
-        img_raw_event = Event()     # Start thread 2
-        img_seg_event = Event()     # Start thread 3
-        transmit_event = Event()    # Start thread 4
-        
-        # Manager setup
-        manager_raw_img = BaseManager()
-        manager_seg_img = BaseManager()
-        manager_path = BaseManager()
-        
-        manager_raw_img.start()
-        manager_seg_img.start()
-        manager_path.start()
-        
-        data_raw_img = manager_raw_img.DataTransfer()
-        data_seg_img = manager_seg_img.DataTransfer()
-        data_path = manager_path.DataTransfer()
-
-        t1 = Process(target=frames_from_files, args=(
-        data_raw_img,
-        img_raw_lock,
-        img_raw_event
-        ))
-        t2 = Process(target=run_model, args=(
-        data_raw_img, 
-        data_seg_img,  
-        img_raw_lock, 
-        img_seg_lock, 
-        img_raw_event,
-        img_seg_event,))
-        t3 = Process(target=path_planning, args=(
-        data_seg_img, 
-        data_path, 
-        img_seg_lock,
-        path_lock,
-        img_seg_event,
-        transmit_event
-        ))
-        
-        talker(data_path, path_lock, transmit_event)
-
-        t4 = Process(target=transmit_trajectory, args=(
-        data_path, 
-        path_lock, 
-        transmit_event
-        
-        ))
-
-        
-    except rospy.ROSInterruptException: pass          
+    except rospy.ROSInterruptException: 
+        pass          
 
 
 
@@ -383,14 +319,6 @@ if __name__ == "__main__":
 
     
 
-    # Start processes and join datatransmission
-    processes = [t1,t2,t3,t4]
-
-    for process in processes:
-        process.start()
-
-    for process in processes:
-        process.join()
 
 """
 
