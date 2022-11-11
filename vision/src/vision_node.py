@@ -15,7 +15,7 @@ import copy
 from os.path import exists
 from pathlib import Path
 from model_utils import load_model
-from image_aligner import image_aligner_cpu
+import image_aligner
 from trajectory_planning import Crack, Frame, map_cracks, process_image
 
 
@@ -134,7 +134,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
     # Set alignment values for first runthrough where there is no previous image alignment
     img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
     local_image = 0
-    traveled = 0
+    traveled_y = 0
 
     # Main thread loop
     print('Thread 2 started (run_model)')
@@ -152,7 +152,9 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
         if img_raw_old.any():
             new_image = cv2.resize(local_image,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
             new_image = cv2.cvtColor(new_image,cv2.COLOR_BGR2GRAY)
-            traveled, overlapHeight = image_aligner_cpu(img_raw_old, new_image)
+
+            transform = image_aligner.image_aligner_cpu(img_raw_old, new_image)
+            angle, traveled_x, traveled_y = image_aligner.affine_to_angle_trans(transform)
 
         augmentented = detect_transform(image=local_image)
         data = augmentented["image"].to(device=DEVICE)
@@ -170,7 +172,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
         lock_out.acquire()
         data_out.set_data(preds.cpu().numpy())
         # data_out.set_frame_time(local_frameTime)
-        data_out.set_image_offset(traveled)
+        data_out.set_image_offset(-traveled_y)
 
         # Set event flag for path planning thread
         event_out.set()
