@@ -6,6 +6,8 @@ from skimage import measure
 import matplotlib.pyplot as plt
 import networkx as nx
 from sklearn.neighbors import NearestNeighbors
+from scipy.spatial import distance
+from scipy import signal
 
 
 #TODO this class should be cleaned up
@@ -414,3 +416,34 @@ def process_image(img):
         plt.show()
 
     return sorted_cracks
+
+
+# Function to calculate the length the robot needs to travel to follow a trajectory
+def calculate_trajectory_length(trajectory, current_pos):
+    # Turn trajectory from strings to proper format
+    trajectory = np.column_stack([trajectory[:, 0:2].astype(int), np.where(trajectory[:, 2] == 'true', 1, 0)])
+
+    # Calculate distance between all points in trajectory
+    dist_between_points = distance.cdist(trajectory[:, 0:2], trajectory[:, 0:2], metric='euclidean').diagonal(1)
+
+    # Calculate distance from current pos and ad this distance to total
+    beginning_dist = ((current_pos[0] - trajectory[0, 0]) ** 2 + (current_pos[1] - trajectory[0, 1]) ** 2) ** 0.5
+    dist_with_beginning = np.append(np.array([beginning_dist]), dist_between_points)
+
+    # Remove redundant true values to allow calculating the distance of cracks and between cracks separately
+    # 1  0  0  1  1  0  0  1
+    # 1  0  0  0  1  0  0  0
+
+    # Turns instances of ...0 1 1 0... into ...0 1 0 -1... and ...0 1 0... into ...0 1 -1...
+    kernel = np.array([-1, 1])
+    convolved = signal.convolve(trajectory[:, 2], kernel, mode='full')
+
+    # Setting all -1 values to 0
+    crack_bool = np.where(convolved[1:] >= 0, convolved[1:], 0)
+    crack_bool[-1] = 0  # The end of the trajectory should always be considered part of a crack
+
+    # Sum the distances
+    crack_length = np.sum(np.where(crack_bool[:] == 0, dist_with_beginning, 0)).astype(int)
+    between_length = np.sum(np.where(crack_bool[:] == 1, dist_with_beginning, 0)).astype(int)
+
+    return crack_length, between_length
