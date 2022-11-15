@@ -9,8 +9,7 @@ class DiffDrive{
 private:
     double axle_length;     //Distance between wheel center points, in meters
     double wh_radius;       //Wheel radius, in meters
-    double r_angle_per_tick;//Wheel angle per encoder tick, in radians
-    double l_angle_per_tick;//Wheel angle per encoder tick, in radians
+    double angle_per_tick;//Wheel angle per encoder tick, in radians
 
     //Translation and orientation of trailer in relation to world origin
     double world_x_trans = 0;
@@ -27,8 +26,7 @@ public:
     //Constructor for DiffDrive class
     DiffDrive(double wheel_radius, int encoder_increments, double length_between_wheels){
         //Calculate distance per tick for each encoder
-        r_angle_per_tick = 2 * M_PI / encoder_increments;
-        l_angle_per_tick = 2 * M_PI / encoder_increments;
+        angle_per_tick = 2 * M_PI / encoder_increments;
 
         //Store length between wheels and wheel radius
         axle_length = length_between_wheels;
@@ -38,12 +36,12 @@ public:
     //Method for reading encoder values and calculating new world coordinates
     void get_new_transform(){
         //TODO: Somehow read encoder increments
-        int delta_r_encoder = 1;
-        int delta_l_encoder = 1;
+        int delta_r_encoder = 2048;
+        int delta_l_encoder = 2048;
 
         //Calculate angle changes
-        double delta_r_angle = delta_r_encoder * r_angle_per_tick;
-        double delta_l_angle = delta_l_encoder * l_angle_per_tick;
+        double delta_r_angle = delta_r_encoder * angle_per_tick;
+        double delta_l_angle = delta_l_encoder * angle_per_tick;
 
         //Calculate position change in local X
         double delta_x = wh_radius/2 * (delta_l_angle + delta_r_angle);
@@ -57,7 +55,7 @@ public:
         world_z_rot = angle_add(world_z_rot, delta_z);
 
         //Debug
-        ROS_INFO("\nX:\t%f\nY:\t%f\nAngle:\t%f", world_x_trans, world_y_trans, world_z_rot/M_PI*180);
+        //ROS_INFO("\nX:\t%f\nY:\t%f\nAngle:\t%f", world_x_trans, world_y_trans, world_z_rot/M_PI*180);
     }
 
     //Method returns x translation
