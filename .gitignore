@@ -10,3 +10,6 @@ __pycache__/
 # Ignore images
 *.png
 *.jpg
+
+#ignore videos
+*.MP4
