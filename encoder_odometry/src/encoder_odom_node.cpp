@@ -36,8 +36,8 @@ public:
     //Method for reading encoder values and calculating new world coordinates
     void get_new_transform(){
         //TODO: Somehow read encoder increments
-        int delta_r_encoder = 2048;
-        int delta_l_encoder = 2048;
+        int delta_r_encoder = 1;
+        int delta_l_encoder = 1;
 
         //Calculate angle changes
         double delta_r_angle = delta_r_encoder * angle_per_tick;
@@ -50,8 +50,8 @@ public:
         double delta_z = wh_radius/axle_length * (delta_l_angle - delta_r_angle);
 
         //Calculate new world coordinates (-Y is forward direction)
-        world_x_trans += delta_x * cos(world_z_rot - 0.5 * M_PI);
-        world_y_trans += delta_x * sin(world_z_rot - 0.5 * M_PI);
+        world_x_trans += delta_x * sin(world_z_rot);
+        world_y_trans -= delta_x * cos(world_z_rot);
         world_z_rot = angle_add(world_z_rot, delta_z);
 
         //Debug
