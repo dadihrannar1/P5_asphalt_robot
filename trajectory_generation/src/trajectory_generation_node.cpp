@@ -51,16 +51,15 @@ float *ForKin(float theta1, float theta2)
 
 float *InvKin(float xPos, float yPos)
 {
-
   float F0 = sqrt(pow(xPos, 2) + pow(yPos, 2));
   float F1 = sqrt(pow((L0 - xPos), 2) + pow(yPos, 2));
   float y00 = acos((pow(L1, 2) + pow(F0, 2) - pow(L2, 2)) / (2 * F0 * L1));
-float y01=acos((pow(xPos,2)+F0,2)-pow(yPos,2))/(2*F0*xPos));
-float y10 = acos((pow(L1, 2) + pow(F1, 2) - pow(L2, 2)) / (2 * F1 * L1));
-float y11 = acos((pow((L0 - xPos), 2) + pow(F1, 2) - pow(yPos, 2)) / (2 * F1 * (L0 - xPos)));
-float Theta1 = y00 + y01;
-float Theta2 = y10 + y11;
+  float y01 = acos((pow(xPos, 2) + pow(F0, 2) - pow(yPos, 2)) / (2 * F0 * xPos));
+  float y10 = acos((pow(L1, 2) + pow(F1, 2) - pow(L2, 2)) / (2 * F1 * L1));
+  float y11 = acos((pow((L0 - xPos), 2) + pow(F1, 2) - pow(yPos, 2)) / (2 * F1 * (L0 - xPos)));
+  float Theta1 = y00 + y01;
+  float Theta2 = y10 + y11;
 
-float Angl[] = {Theta1, Theta2};
-return Angl;
+  float Angl[] = {Theta1, Theta2};
+  return Angl;
 }
