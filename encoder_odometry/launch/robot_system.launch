@@ -1,0 +1,29 @@
+<launch>
+  <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen"/>
+  <node name="listener69" pkg="controllers" type="sub" output="screen"/>
+  <node name="vision" pkg="vision" type="vision_node.py" output="screen"/>
+
+
+<!-- Working launch file, inorder to run. You have to be in:
+/home/dadi/p5_ws/src/P5_asphalt_robot/encoder_odometry/src
+ and use the following command to allow access: sudo chmod +x encoder_odom_node.cpp
+ (might have to do the same for vision.py), and it should be able to launch. -->
+
+  <!--node pkg="tf2" type="static_tranform_publisher" name="robot_localization_ekf_node_odom" clear_params="true"-->
+  <!--param name="frequency" value="10." />
+  <param name="sensor_timeout" value="0.2" />
+  <param name="two_d_mode" value="true" />
+  <param name="publish_tf" value="true" />
+  <param name="map_frame" value="map" />
+  <param name="odom_frame" value="odom" />
+  <param name="base_link_frame" value="base_link" />
+  <param name="world_frame" value="odom" />
+  <remap from="odometry/filtered" to="odometry/filtered_twist" />
+  <param name="twist0" value="turtle1/sensors/twist" />
+  <param name="twist0_differential" value="false"/>
+  <rosparam param="twist0_config">
+    [false, false, false, false, false, false,
+     true, true, false, false, false, true,
+     false, false, false]</rosparam-->
+
+</launch>
