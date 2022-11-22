@@ -1,8 +1,18 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(controllers)
 
+
+
+
+
 ## Compile as C++11, supported in ROS Kinetic and newer
  add_compile_options(-std=c++11)
+
+
+
+file(GLOB CPP_SOURCES *.cpp)
+
+file(GLOB HPP_SOURCES *.hpp)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -127,9 +137,24 @@ catkin_package(
 ## Declare a C++ library
 
 
-include_directories(${catkin_INCLUDE_DIRS})
 
-#add_library(${PROJECT_NAME}/src)
+set(WEBOTS_HOME /usr/local/webots)
+#link_directories($ENV{WEBOTS_HOME}/lib/controller)
+set(WEBOTS_INCLUDE
+    ${WEBOTS_HOME}/include/controller/cpp
+    ${WEBOTS_HOME}/include/controller/cpp/utils
+)
+
+#set(pain_INCLUDE  )
+
+#set (LIBRARIES m ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
+include_directories( 
+${catkin_INCLUDE_DIRS}
+${WEBOTS_INCLUDE}
+/home/dadi/p5_ws/src/P5_asphalt_robot/controllers/Itsa_me_pain_again
+/home/dadi/p5_ws/src/P5_asphalt_robot/UDP/include
+)
+
 
 
 #add_library(/usr/local/webots/include/controller/cpp/webots/Robot.hpp
@@ -145,12 +170,25 @@ include_directories(${catkin_INCLUDE_DIRS})
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
+## With catkin_make all packages are built within a single CMake contex
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(sub src/subscriber_test.cpp)
 
+ add_dependencies(sub controllers_generate_messages_cpp)
+
  target_link_libraries(sub ${catkin_LIBRARIES})
 
+add_executable(pain Itsa_me_pain_again/Itsa_me_pain_again.cpp)
+
+add_dependencies(pain controllers_generate_messages_cpp)
+
+
+
+target_link_libraries(pain ${catkin_LIBRARIES})
+
+
+
+ #add_dependencies(sub controllers_cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -223,6 +261,12 @@ include_directories(${catkin_INCLUDE_DIRS})
 #   FILES_MATCHING PATTERN "*.h"
 #   PATTERN ".svn" EXCLUDE
 # )
+
+install(TARGETS sub
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(TARGETS pain
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
