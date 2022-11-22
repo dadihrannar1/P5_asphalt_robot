@@ -1,6 +1,6 @@
 <launch>
   <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen"/>
-  <node name="listener69" pkg="controllers" type="sub" output="screen"/>
+  <node name="listener" pkg="controllers" type="sub" output="screen"/>
   <node name="vision" pkg="vision" type="vision_node.py" output="screen"/>
 
 
@@ -9,7 +9,11 @@
  and use the following command to allow access: sudo chmod +x encoder_odom_node.cpp
  (might have to do the same for vision.py), and it should be able to launch. -->
 
-  <!--node pkg="tf2" type="static_tranform_publisher" name="robot_localization_ekf_node_odom" clear_params="true"-->
+
+<!-- Frame transformations are made with args="x y z yaw pitch roll frame_id child_frame"-->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="odom_frame" args="0 0 0.3 0 0 0 odom_frame base_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_frame" args="0 -1 01.75 0 1 0 camera_frame" />
+
   <!--param name="frequency" value="10." />
   <param name="sensor_timeout" value="0.2" />
   <param name="two_d_mode" value="true" />
