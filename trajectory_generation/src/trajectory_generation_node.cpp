@@ -43,9 +43,6 @@ float *ForKin(float theta1, float theta2)
   // y1 = acos((L3^2)/((2*L3*L2)));
   // vinkel = acos((dot([1,0],P34))/(1*L3));
   float E[] = {AB[0] + L2 * cos(phi1 + phi2), AB[1] + L2 * sin(phi1 + phi2)};
-  float x = E[0];
-  float y = E[1];
-
   return E;
 }
 
