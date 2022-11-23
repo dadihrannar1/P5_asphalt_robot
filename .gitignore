@@ -10,3 +10,4 @@ __pycache__/
 # Ignore images
 *.png
 *.jpg
+trajectory_generation/src/Test_Kinematics.py
