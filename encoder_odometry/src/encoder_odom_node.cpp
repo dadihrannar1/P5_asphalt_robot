@@ -97,6 +97,15 @@ public:
     double get_delta_z_rot(){return delta_z_rot;}
 };
 
+
+    static const boost::array<_Float64, 36> STANDARD_TWIST_COVARIANCE =
+   {0.05, 0.006, 0.01, 0.01, 0.01, 0.000009,
+    0.006, 0.05, 0.01, 0.01, 0.01, 0.01,
+    0.01, 0.01, 0.05, 0.01, 0.01, 0.01,
+    0.01, 0.01, 0.01, 0.09, 0.01, 0.01,
+    0.01, 0.01, 0.01, 0.01, 0.09, 0.01,
+    0.000009, 0.01, 0.01, 0.01, 0.01, 0.09};
+
 int main(int argc, char** argv){
     ros::init(argc, argv, "odometry_publisher");
 
@@ -143,13 +152,15 @@ int main(int argc, char** argv){
         odom.pose.pose.position.y = ddr_position.get_y();
         odom.pose.pose.position.z = 0.0;
         odom.pose.pose.orientation = ddr_position.get_quat();
+        odom.pose.covariance = STANDARD_TWIST_COVARIANCE;
 
         //set the velocity
         odom.child_frame_id = "base_link";
         odom.twist.twist.linear.x = ddr_position.get_delta_x();
         odom.twist.twist.linear.y = ddr_position.get_delta_y();
         odom.twist.twist.angular.z = ddr_position.get_delta_z_rot();
-
+        odom.twist.covariance = STANDARD_TWIST_COVARIANCE;
+        
         //publish the message
         odom_pub.publish(odom);
 
