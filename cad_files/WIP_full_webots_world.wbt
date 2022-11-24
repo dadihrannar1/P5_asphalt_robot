@@ -152,7 +152,7 @@ Robot {
         }
       ]
       name "trailer"
-      boundingObject USE Trailer
+      boundingObject USE Mounting_platform
       physics Physics {
       }
     }
@@ -188,9 +188,12 @@ Robot {
                   children [
                     HingeJoint {
                       jointParameters HingeJointParameters {
+                        axis 0 1 0
+                        anchor 0.93716 -0.26091 -0.2001
                       }
                       endPoint DEF Nozzle Solid {
                         translation 0 0.403 0
+                        rotation 1 0 0 0
                         children [
                           Shape {
                             appearance Appearance {
