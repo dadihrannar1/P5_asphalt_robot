@@ -20,6 +20,7 @@ from trajectory_planning import Crack, Frame, map_cracks, process_image
 
 
 from vision.msg import vision_out
+import atexit
 
 
 # Camera source (0 for webcam)
@@ -322,11 +323,21 @@ def vision_pub(data_in, lock_in, event_in):
                 r.sleep()
 
 
+#
+def shutoffthread(process):
+    import sys
+    for p in range(len(process)):
+        print("kill thread")
+        p.terminate()
+    sys.exit(1)
+
+
 
 
 
 
 if __name__ == "__main__":
+
     BaseManager.register('DataTransfer', DataTransfer)
 
     # Locks
@@ -381,6 +392,9 @@ if __name__ == "__main__":
 
     # Start processes and join datatransmission
     processes = [t1,t2,t3,t4]
+    
+    # Shutdown extra threads when program is exiting
+    atexit.register(shutoffthread, processes)
 
     for process in processes:
         process.start()
