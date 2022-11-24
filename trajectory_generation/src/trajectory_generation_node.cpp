@@ -37,8 +37,17 @@ float *Trajpoints(float *startPos, float *endPos, const int points)
   {
     wpts += {{startPos[0] + (startPos[1] - startPos[0]) / points * i}, {endPos[0] + (endPos[1] - endPos[0]) / points * i}};
   }
-
   return wpts;
+}
+
+float *avals(float thetastart, float thetaend, float startacc, float endacc, float tf)
+{
+  float a[4] = {};
+  a[0] = thetastart;
+  a[1] = startacc;
+  a[2] = 3 / (pow(tf, 2)) * (thetaend - thetastart);
+  a[3] = -2 / (pow(tf, 3)) * (thetaend - thetastart);
+  return a;
 }
 
 float *ForKin(float theta1, float theta2)
