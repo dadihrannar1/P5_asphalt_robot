@@ -222,6 +222,10 @@ Robot {
                           }
                         ]
                         name "Nozzle"
+                        physics Physics {
+                          density -1
+                          mass 2
+                        }
                       }
                     }
                     DEF Right_arm2 Transform {
@@ -299,7 +303,7 @@ Robot {
                 ]
               }
             ]
-            name "MotorR arm"
+            name "MotorR shoulder"
             boundingObject USE Right_arm1
             physics Physics {
               density 8000
@@ -375,6 +379,7 @@ Robot {
                       ]
                     }
                   ]
+                  name "leftEndArm"
                   boundingObject USE Left_arm2
                   physics Physics {
                     density 8000
@@ -415,6 +420,7 @@ Robot {
                 ]
               }
             ]
+            name "MotorL shoulder"
             boundingObject USE Left_arm1
             physics Physics {
               density 8000
@@ -428,5 +434,6 @@ Robot {
       }
     }
   ]
+  name "Robot and trailer"
   boundingObject USE Trailer
 }
