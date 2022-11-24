@@ -13,4 +13,6 @@ __pycache__/
 *.msg
 
 
-**/test
+*.srv
+
+
