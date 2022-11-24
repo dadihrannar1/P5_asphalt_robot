@@ -10,3 +10,7 @@ __pycache__/
 # Ignore images
 *.png
 *.jpg
+*.msg
+
+
+**/test
