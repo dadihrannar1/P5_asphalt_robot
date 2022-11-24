@@ -30,6 +30,17 @@ int main(int argc, char **argv)
   return 0;
 }
 
+float *Trajpoints(float *startPos, float *endPos, const int points)
+{
+  float wpts[] = {{startPos[0]}, {startPos[1]}};
+  for (int i = 1; i <= points; i++)
+  {
+    wpts += {{startPos[0] + (startPos[1] - startPos[0]) / points * i}, {endPos[0] + (endPos[1] - endPos[0]) / points * i}};
+  }
+
+  return wpts;
+}
+
 float *ForKin(float theta1, float theta2)
 {
   float AB[2] = {L1 * cos(theta1), L1 * sin(theta1)};
