@@ -3,20 +3,21 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PointStamped.h>
 #include <actionlib/server/action_server.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <control_msgs/FollowJointTrajectoryActionGoal.h>
-#include <trajectory_generation/vision_out.h>
+//#include <trajectory_generation/vision_out.h>
 #include <cmath>
 
 int L0 = 250;
 int L1 = 620;
 int L2 = 745;
 
-void coordinate_callback(const trajectory_generation::vision_out::ConstPtr &coordinates)
+void coordinate_callback(const geometry_msgs::PointStamped::ConstPtr &coordinates)
 {
-  ROS_INFO("x coordinate: [%d]", coordinates->x);
-  ROS_INFO("y coordinate: [%d]", coordinates->y);
+  ROS_INFO("x coordinate: [%d]", coordinates->point.x);
+  ROS_INFO("y coordinate: [%d]", coordinates->point.y);
   // ROS_INFO("starting a crack: [%s]", msg-> crack);
 }
 

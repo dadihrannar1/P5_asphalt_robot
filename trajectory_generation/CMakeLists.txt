@@ -13,8 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   actionlib
-  std_msgs
-  message_generation
+  #std_msgs
+  #message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,10 +50,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-FILES	
-vision_out.msg
-)
+#add_message_files(
+#FILES	
+#vision_out.msg
+#)
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -69,10 +69,10 @@ vision_out.msg
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-DEPENDENCIES
-std_msgs
-)
+#generate_messages(
+#DEPENDENCIES
+#std_msgs
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -110,8 +110,8 @@ rospy
 tf2
 tf2_ros
 actionlib
-std_msgs
-message_runtime
+#std_msgs
+#message_runtime
 )
 
 ###########
@@ -132,10 +132,10 @@ include_directories(${catkin_INCLUDE_DIRS})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(trajectory_generation_node src/trajectory_generation_node.cpp)
+#add_executable(trajectory_generation_node src/trajectory_generation_node.cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(trajectory_generation_node ${catkin_LIBRARIES})
+#target_link_libraries(trajectory_generation_node ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
