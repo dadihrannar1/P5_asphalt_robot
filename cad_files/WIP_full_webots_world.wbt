@@ -167,8 +167,6 @@ Robot {
           device [
             DEF MotorR RotationalMotor {
               name "MotorR"
-              consumptionFactor 0
-              controlPID 100 0 0
               maxVelocity 10.5
               maxTorque 445
             }
@@ -190,10 +188,10 @@ Robot {
                       jointParameters HingeJointParameters {
                         axis 0 1 0
                         anchor 0.93716 -0.26091 -0.2001
+                        staticFriction 200000
                       }
                       endPoint DEF Nozzle Solid {
                         translation 0 0.403 0
-                        rotation 1 0 0 0
                         children [
                           Shape {
                             appearance Appearance {
