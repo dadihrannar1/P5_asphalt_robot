@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(new_controller)
 
 ## Find catkin macros and libraries
@@ -184,9 +184,9 @@ link_directories($ENV{WEBOTS_HOME}/lib/controller)
 set (LIBRARIES m ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 set(WEBOTS_INCLUDE
-${WEBOTS_HOME}/include/controller/c
+${WEBOTS_HOME}/include/controller/c/
 ${WEBOTS_HOME}/include/controller/c/utils
-${WEBOTS_HOME}/include/controller/cpp
+${WEBOTS_HOME}/include/controller/cpp/
 ${WEBOTS_HOME}/include/controller/cpp/utils
 )
 
@@ -203,7 +203,7 @@ add_executable(manipulator controllers/manipulator_controler.cpp)
 add_dependencies(manipulator new_controller_generate_messages_cpp)
 
 target_link_libraries(manipulator
-	${catkin_LIBRARIES} ${WEBOTS_INCLUDE}
+	${catkin_LIBRARIES} ${LIBRARIES}
 )
 
 
