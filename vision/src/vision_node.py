@@ -308,7 +308,7 @@ def angle_add(angle_1, angle_2):
 def vision_pub(data_in, lock_in, event_in):
         rospy.init_node('vision_publisher', anonymous=True)
         point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size = 10)
-        transform_pub = rospy.Publisher('odom', nav_msgs.Odometry, queue_size = 50)
+        transform_pub = rospy.Publisher('vo', nav_msgs.Odometry, queue_size = 50)
 
         r = rospy.Rate(100) #100hz
 

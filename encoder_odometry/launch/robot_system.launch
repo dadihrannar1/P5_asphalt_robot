@@ -1,6 +1,5 @@
 <launch>
   <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen"/>
-  <node name="listener" pkg="controllers" type="sub" output="screen"/>
   <node name="vision" pkg="vision" type="vision_node.py" output="screen"/>
 
 
