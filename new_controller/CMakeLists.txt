@@ -189,13 +189,13 @@ include_directories(
 
 ## Instructions for keyboard_teleop node
 
-#add_executable(keyboard_teleop src/keyboard_teleop.cpp)
+add_executable(manipulator controllers/manipulator_controler.cpp)
 
-#add_dependencies(keyboard_teleop webots_ros_generate_messages_cpp)
+add_dependencies(manipulator manipulator_controler_generate_messages_cpp)
 
-#target_link_libraries(keyboard_teleop
-#	${catkin_LIBRARIES}
-#)
+target_link_libraries(manipulator
+	${catkin_LIBRARIES}
+)
 
 
 
@@ -204,16 +204,17 @@ include_directories(
 ## Install ##
 #############
 
-#install(TARGETS keyboard_teleop
+install(TARGETS manipulator
+       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+#install(TARGETS new_controller
 #        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
+#catkin_install_python(PROGRAMS scripts/ros_controller.py
+#        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-
-catkin_install_python(PROGRAMS scripts/ros_controller.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-catkin_install_python(PROGRAMS scripts/ros_python.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#catkin_install_python(PROGRAMS scripts/ros_python.py
+#        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})#
 
 catkin_install_python(PROGRAMS scripts/webots_launcher.py
         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
