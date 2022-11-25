@@ -16,3 +16,4 @@ __pycache__/
 *.srv
 
 
+trajectory_generation/src/Test_Kinematics.py
