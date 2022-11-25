@@ -1,0 +1,42 @@
+<launch>
+  <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen"/>
+  <node name="listener" pkg="controllers" type="sub" output="screen"/>
+  <node name="vision" pkg="vision" type="vision_node.py" output="screen"/>
+
+
+<!-- Working launch file, inorder to run. You have to be in:
+/home/dadi/p5_ws/src/P5_asphalt_robot/encoder_odometry/src
+ and use the following command to allow access: sudo chmod +x encoder_odom_node.cpp
+ (might have to do the same for vision.py), and it should be able to launch. -->
+
+
+<!-- Frame transformations are made with args="x y z yaw pitch roll frame_id child_frame"(just estimations now!)-->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="odom2" args="0 0 0.3 0 0 0 odom base_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_frame" args="0 -1 1.75 0 1 0 camera_frame camera_link" />
+
+<!-- Remapping to fit topics in the robot_pose_ekf package -->
+  <!--remap from="/odom" to="robot_pose_ekf/vo"/-->
+
+<!-- Extended Kalman Filter, inorder to get the package you have to type the following command:
+sudo apt-get install ros-noetic-robot-pose-ekf
+The filter matches the relative world coordinates from the odom_frame and the camera_frame.
+It returns a single estimated postion, based on the sensors' "error" covariances/-->
+
+  <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" >
+    <param name="output_frame" value="odom"/>
+    <remap from="odom" to="/odom"/>
+    <param name="base_footprint_frame" value="base_footprint"/>
+    <param name="freq" value="1"/>
+    <param name="sensor_timeout" value="1.0"/>
+    <param name="odom_used" value="true"/>
+    <param name="imu_used" value="false"/>
+    <param name="vo_used" value="true"/>
+    <param name="gps_used" value="false"/>
+    <param name="debug" value="true"/>
+    <param name="self_diagnose" value="true"/>
+  
+  </node>
+  <!-- Remapping ekf to base_link as the estimated frame -->
+  <remap from="/odom_combined" to="/base_footprint"/>
+
+</launch>
