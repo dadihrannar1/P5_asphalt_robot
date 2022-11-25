@@ -178,12 +178,21 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-###########
-## Build ##
-###########
 
-include_directories(
-  ${catkin_INCLUDE_DIRS}
+set(WEBOTS_HOME /usr/local/webots)
+link_directories($ENV{WEBOTS_HOME}/lib/controller)
+set (LIBRARIES m ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
+
+set(WEBOTS_INCLUDE
+${WEBOTS_HOME}/include/controller/c
+${WEBOTS_HOME}/include/controller/c/utils
+${WEBOTS_HOME}/include/controller/cpp
+${WEBOTS_HOME}/include/controller/cpp/utils
+)
+
+include_directories( 
+${catkin_INCLUDE_DIRS}
+${WEBOTS_INCLUDE}
 )
 
 
@@ -191,10 +200,10 @@ include_directories(
 
 add_executable(manipulator controllers/manipulator_controler.cpp)
 
-add_dependencies(manipulator manipulator_controler_generate_messages_cpp)
+add_dependencies(manipulator new_controller_generate_messages_cpp)
 
 target_link_libraries(manipulator
-	${catkin_LIBRARIES}
+	${catkin_LIBRARIES} ${WEBOTS_INCLUDE}
 )
 
 
