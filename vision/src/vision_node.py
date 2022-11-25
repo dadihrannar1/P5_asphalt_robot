@@ -6,6 +6,8 @@ import time
 import math
 import random
 import rospy
+import tf2_ros
+import tf.transformations as tf_convert
 import torch
 import albumentations
 from albumentations.pytorch.transforms import ToTensorV2
@@ -17,9 +19,8 @@ from pathlib import Path
 from model_utils import load_model
 import image_aligner
 from trajectory_planning import Crack, Frame, map_cracks, process_image
-
-
-from vision.msg import vision_out
+import geometry_msgs.msg as geo_msgs
+import nav_msgs.msg as nav_msgs
 
 
 # Camera source (0 for webcam)
@@ -41,7 +42,9 @@ WIDTH = 480
 class DataTransfer:
     def __init__(self) -> None:
         self.data = 0
-        self.offset = 0
+        self.offset_x = 0
+        self.offset_y = 0
+        self.offset_rot = 0
         self.frame_time = 0
 
     def set_data(self,value):
@@ -50,11 +53,13 @@ class DataTransfer:
     def get_data(self):
         return self.data
 
-    def set_image_offset(self, value):
-        self.offset = value
+    def set_image_offset(self, x_trans, y_trans, z_rot):
+        self.offset_x = x_trans
+        self.offset_y = y_trans
+        self.offset_rot = z_rot
 
     def get_image_offset(self):
-        return self.offset
+        return self.offset_x, self.offset_y, self.offset_rot
 
     def set_frame_time(self, value):
         self.frame_time = value
@@ -81,7 +86,7 @@ def frames_from_camerastream(data_out, lock, event):
             time.sleep(10) # wait 10 seconds for video stream to open
         
         while rval:
-            frame_time = time.time()
+            frame_time = time.time_ns()
             rval, frame = cap.read()
 
             lock.acquire()
@@ -100,7 +105,7 @@ def frames_from_files(data_out, lock, event):
     print('Thread 1 started (frames_from_files)')
     while True:
         if exists(path_string + str(i) + '.png'):
-            frame_time = time.time()
+            frame_time = time.time_ns()
             frame = cv2.imread(path_string + str(i) + '.png')
             i = i + 1
 
@@ -134,7 +139,9 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
     # Set alignment values for first runthrough where there is no previous image alignment
     img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
     local_image = 0
+    traveled_x = 0
     traveled_y = 0
+    angle = 0
 
     # Main thread loop
     print('Thread 2 started (run_model)')
@@ -145,7 +152,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
         # Lock data while it is being read by the thread
         lock_in.acquire()
         local_image = data_in.get_data()
-        local_frame_time = data_in.get_frame_time() #TODO this seems unused why is it here
+        local_frame_time = data_in.get_frame_time()
         lock_in.release()
         
         # 
@@ -171,8 +178,8 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
         # Send data to path planning thread
         lock_out.acquire()
         data_out.set_data(preds.cpu().numpy())
-        # data_out.set_frame_time(local_frameTime)
-        data_out.set_image_offset(-traveled_y)
+        data_out.set_frame_time(local_frame_time)
+        data_out.set_image_offset(angle, traveled_x, traveled_y)
 
         # Set event flag for path planning thread
         event_out.set()
@@ -195,9 +202,10 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_in, event_out):
         lock_in.acquire()
         local_img = data_in.get_data().astype(np.uint8) # get data
         local_frame_time = data_in.get_frame_time()
-        offset = data_in.get_image_offset()
+        angle, traveled_x, traveled_y = data_in.get_image_offset()
         lock_in.release()
         sorted_cracks = process_image(local_img)
+        
         img_old_seg = local_img
         frame1 = Frame()    
         frame1.set_frame_time(local_frame_time)
@@ -205,28 +213,25 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_in, event_out):
         for crack in sorted_cracks:
             frame1.add_crack(Crack(crack))
 
+        # If not first frame, ensure all cracks which have already been marked for repair are not marked again
         if not old_frame == 0:
-            map_cracks(old_frame,frame1,offset)
+            map_cracks(old_frame, frame1, traveled_y)
         
         frame1.find_path()
        
         old_frame = copy.copy(frame1)
-        # from path_planning.utils import map_cracks
-        # if not old_frame == 0:
-        #     map_cracks()
         
         # Set data if lock is free
         lock_out.acquire()
         data_out.set_data(frame1)
+        data_out.set_frame_time(local_frame_time)
+        data_out.set_image_offset(angle, traveled_x, traveled_y)
         event_out.set()
         lock_out.release()
         
-        frame0Vis = visualize(frame1, frame1.path,320*0.75)
-        cv2.imshow("crack visualisation", frame0Vis)
-        cv2.waitKey(10)
-
-
-
+        #frame0Vis = visualize(frame1, frame1.path,320*0.75)
+        #cv2.imshow("crack visualisation", frame0Vis)
+        #cv2.waitKey(10)
 
 #Visualise cracks for debugging
 def visualize(frame: Frame, p1, offset):
@@ -293,32 +298,93 @@ def transmit_trajectory(data_in, lock_in, event_in):
             #print('Position: (X: ' + str(path[0]) + ', Y: ' + str(path[1]) + ')\nTime: ' + str(local_data.get_frame_time()) + ' Crack: ' + str(path[2]))
 """
 
-def vision_pub(data_in, lock_in, event_in):
-        print("x")
-        rospy.init_node('vision_information', anonymous=True)
-        pub = rospy.Publisher('vision_publisher', vision_out, queue_size = 10)
-        r = rospy.Rate(100) #100hz
-        msg = vision_out()
+#Function for adding angles bounded to [0, 2*PI[
+def angle_add(angle_1, angle_2):
+    if(angle_1 + angle_2 >= 2*math.pi): return angle_1 + angle_2 - 2*math.pi
+    elif(angle_1 + angle_2 < 0): return angle_1 + angle_2 + 2*math.pi
+    else: return angle_1 + angle_2
 
+def vision_pub(data_in, lock_in, event_in):
+        rospy.init_node('vision_publisher', anonymous=True)
+        point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size = 10)
+        transform_pub = rospy.Publisher('odom', nav_msgs.Odometry, queue_size = 50)
+
+        r = rospy.Rate(100) #100hz
+
+        world_pose_x = 0
+        world_pose_y = 0
+        world_orientation = 0
+
+        STANDARD_COVARIANCE = [0.05, 0.006, 0.01, 0.01, 0.01, 0.000009,
+                            0.006, 0.05, 0.01, 0.01, 0.01, 0.01,
+                            0.01, 0.01, 0.05, 0.01, 0.01, 0.01,
+                            0.01, 0.01, 0.01, 0.09, 0.01, 0.01,
+                            0.01, 0.01, 0.01, 0.01, 0.09, 0.01,
+                            0.000009, 0.01, 0.01, 0.01, 0.01, 0.09]
+
+        print('Thread 4 started (vision_pub)')
         while not rospy.is_shutdown():
-            print("D")
             # Wait for event flag for new trajectory
             event_in.wait()
             event_in.clear()
-            print("G")
 
             # Fetch trajectory
             lock_in.acquire()
             local_data = data_in.get_data()
+            local_frame_time = data_in.get_frame_time()
+            angle, traveled_x, traveled_y = data_in.get_image_offset()
             lock_in.release()
-            
+
+            # Split timestamp to secs and nsecs
+            nsecs = local_frame_time % int(1000000000)
+            secs = int((local_frame_time - nsecs)/1000000000)
+
+            # Calculate world pose
+            world_pose_x += traveled_x
+            world_pose_y += traveled_y
+            world_orientation = angle_add(world_orientation, angle)
+
+            # Publish transform from camera
+            tf_msg = nav_msgs.Odometry()
+            tf_msg.header.stamp.secs = secs
+            tf_msg.header.stamp.nsecs = nsecs
+            tf_msg.header.frame_id = "odom"
+            tf_msg.child_frame_id = "vo"
+
+            # Add twist
+            tf_msg.twist.twist.linear.x = traveled_x
+            tf_msg.twist.twist.linear.y = traveled_y
+            tf_msg.twist.twist.linear.z = 0.0
+            tf_msg.twist.twist.angular.x = 0.0
+            tf_msg.twist.twist.angular.y = 0.0
+            tf_msg.twist.twist.angular.z = angle
+            tf_msg.twist.covariance = STANDARD_COVARIANCE
+
+            # Add pose
+            tf_msg.pose.pose.position.x = world_pose_x
+            tf_msg.pose.pose.position.y = world_pose_y
+            tf_msg.pose.pose.position.z = 0.0
+            quat = tf_convert.quaternion_from_euler(0, 0, world_orientation)
+            tf_msg.pose.pose.orientation.x = quat[0]
+            tf_msg.pose.pose.orientation.y = quat[1]
+            tf_msg.pose.pose.orientation.z = quat[2]
+            tf_msg.pose.pose.orientation.w = quat[3]
+            tf_msg.pose.covariance = STANDARD_COVARIANCE
+
+            transform_pub.publish(tf_msg)
+
             # Send each 
             for path in local_data.path:
-                msg.x = path[0]
-                msg.y = path[1]
-                msg.crack = path[2]
-                pub.publish(msg)
-                rospy.loginfo(msg)
+                #geometry_msgs PointStamped Message
+                message = geo_msgs.PointStamped()
+                message.header.frame_id = "points"
+                message.header.stamp.secs = secs
+                message.header.stamp.nsecs = nsecs
+                message.point.x = path[0] 
+                message.point.y = path[1] 
+                message.point.z = path[2] # Used for sending the end of crack information
+
+                point_pub.publish(message)
                 r.sleep()
 
 
