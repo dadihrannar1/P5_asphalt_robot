@@ -20,8 +20,8 @@ void loop() {
   // checks if the reflection is white or black
   bool sens_1_read = bool_read(analogRead(A2), 100);
   bool sens_2_read = bool_read(analogRead(A3), 100);
-  bool sens_3_read = bool_read(analogRead(A9), 150);
-  bool sens_4_read = bool_read(analogRead(A10), 150);
+  bool sens_3_read = bool_read(analogRead(A0), 150);
+  bool sens_4_read = bool_read(analogRead(A1), 150);
 
 // test to see if the sensors are reading
 if (tester == 1){ 
@@ -39,6 +39,14 @@ if (tester == 1){
   if ((sens_2_read != sens_2_state && sens_2_read == sens_1_state) || (sens_1_read != sens_1_state && sens_1_read != sens_2_state)){
     delta1 -= 1;
   }
+
+  if ((sens_3_read != sens_3_state && sens_3_read == sens_4_state) || (sens_4_read != sens_4_state && sens_4_read != sens_4_state)){
+    delta2 += 1;
+  }
+  if ((sens_4_read != sens_4_state && sens_4_read == sens_4_state) || (sens_4_read != sens_3_state && sens_3_read != sens_4_state)){
+    delta2 -= 1;
+  }
+  
   // syncing to the python code
    if (Serial.available() > 0){
   incomingByte = Serial.read();
@@ -60,6 +68,8 @@ bool bool_read (int reading, int thresh){
 void send_delta(unsigned long timer){
   if (Serial.availableForWrite()){
     Serial.print(delta1/2);
+    Serial.print("$");
+    Serial.print(delta2/2);
     Serial.print("$");
     Serial.println(timer);
     delta1=0;
