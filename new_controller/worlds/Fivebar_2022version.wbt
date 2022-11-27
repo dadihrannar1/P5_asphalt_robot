@@ -326,7 +326,7 @@ Robot {
           }
           device [
             RotationalMotor {
-              name "Motor_L"
+              name "MotorL"
               maxVelocity 10.5
               maxTorque 445
             }
@@ -448,4 +448,7 @@ Robot {
   name "fivebarTrailer"
   boundingObject USE Trailer
   controller "ros"
+  controllerArgs [
+    "--name=fivebarTrailer"
+  ]
 }
