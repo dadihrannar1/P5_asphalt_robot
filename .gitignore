@@ -10,3 +10,7 @@ __pycache__/
 # Ignore images
 *.png
 *.jpg
+
+#ignore videos
+*.MP4
+Image_aquisistion/image_details.json
