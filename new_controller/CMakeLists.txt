@@ -22,16 +22,19 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs messag
 ## Generate messages in the 'msg' folder
   add_message_files(
     FILES
+    motor_pos.msg
   )
 
 ## Generate services in the 'srv' folder
   add_service_files(
     FILES
+    set_pos.srv
   )
 
 ## Generate added messages and services with any dependencies listed here
   generate_messages(
     DEPENDENCIES
+    std_msgs
   )
 
 ###################################
@@ -70,6 +73,7 @@ ${WEBOTS_INCLUDE}
 
 ## Instructions for keyboard_teleop node
 
+#add_executable(manipulator controllers/basic_moveRead_test.cpp)
 add_executable(manipulator controllers/manipulator_controller.cpp)
 
 add_dependencies(manipulator new_controller_generate_messages_cpp)

@@ -10,6 +10,15 @@
         4.1: ros::topic /fivebarTrailer/PosL/value
 */ 
 
+// Robot zero positions
+/*
+  MotorR
+        Theta = -p+1.8675
+  MotorL
+        Theta = p-2.33874
+*/
+
+
 #include "ros/ros.h"
 
 #include <webots_ros/Int32Stamped.h>
@@ -20,105 +29,98 @@
 
 #include <webots_ros/robot_get_device_list.h>
 
+#include <new_controller/set_pos.h>
+#include <new_controller/motor_pos.h>
+
 #include <std_msgs/String.h>
+#include <cmath>
 
 #include <signal.h>
 #include <stdio.h>
 
+// Time step for the webots simulation
 #define TIME_STEP 32
 
-// standard callback function for subscribers
-void chatterCallbackL(const webots_ros::Float64Stamped::ConstPtr &value){
-  ROS_INFO("PosL sensor sent value %f (time: %d:%d).", value->data, value->header.stamp.sec, value->header.stamp.nsec);
-}
-void chatterCallbackR(const webots_ros::Float64Stamped::ConstPtr &value){
-  ROS_INFO("PosR sensor sent value %f (time: %d:%d).", value->data, value->header.stamp.sec, value->header.stamp.nsec);
-}
+ros::ServiceClient leftMotorClient;
+ros::ServiceClient rightMotorClient;
 
+class robotController{
+  public:
+
+  double theta_1;
+  double theta_2;
+  double simTime;
+
+  // standard callback function for subscribers
+  void posCallbackL(const webots_ros::Float64Stamped::ConstPtr &value){
+    theta_1 = value->data-2.33874;
+    simTime = value->header.stamp.sec;
+    //ROS_INFO("PosL sensor sent value %f (time: %d:%d).", value->data, value->header.stamp.sec, value->header.stamp.nsec);
+  }
+  void posCallbackR(const webots_ros::Float64Stamped::ConstPtr &value){
+    theta_2 = -value->data+1.8675;
+  }
+};
+
+// Function for setting the motors in a desired position
+bool setPos(new_controller::set_pos::Request &msg,
+            new_controller::set_pos::Response &nah){
+  double posL = msg.theta_1+2.33874;
+  double posR = msg.theta_2-1.8675;
+
+  // define and publish
+  webots_ros::set_float leftMotorSrv; webots_ros::set_float rightMotorSrv;
+  leftMotorSrv.request.value = posL;
+  rightMotorSrv.request.value = posR;
+  leftMotorClient.call(leftMotorSrv);
+  rightMotorClient.call(rightMotorSrv);
+
+  return true;
+            }
 
 int main(int argc, char **argv) {
-  // set variables
-  static double lposition = 0;
-  static double rposition = 0;
-  // Motor services
-  ros::ServiceClient leftMotorClient;
-  webots_ros::set_float leftMotorSrv;
-
-  ros::ServiceClient rightMotorClient;
-  webots_ros::set_float rightMotorSrv;
-
-  // Encoder topics and services
-  ros::ServiceClient encoderClient;
-  ros::Subscriber PosL;
-  ros::Subscriber PosR;
-
-  // Time step for motor control
-  ros::ServiceClient timeStepClient;
-  webots_ros::set_int timeStepSrv;
-
-
   // create a node named 'test_movement' on ROS network
-  ros::init(argc, argv, "test_movement", ros::init_options::AnonymousName);
+  ros::init(argc, argv, "manipulator_controller");
   ros::NodeHandle n;
-  ros::Rate r(100);
 
-  // Wait for the `ros` controller.
+  // Wait for the simulation controller.
   ros::service::waitForService("/fivebarTrailer/robot/time_step");
   ros::spinOnce();
 
   // Time step
+  webots_ros::set_int timeStepSrv;
   timeStepSrv.request.value = TIME_STEP;
 
-  // These are all the services found in the default ros controller
-  leftMotorClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorL/set_position");
-  rightMotorClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorR/set_position");
-  timeStepClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/robot/time_step");
-
   // Encoders have to be enabled before their topics are available
-  encoderClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/PosL/enable");
+  ros::ServiceClient encoderClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/PosL/enable");
   encoderClient.call(timeStepSrv);
   encoderClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/PosR/enable");
   encoderClient.call(timeStepSrv);
-  // Set function to read out encoder postion
-  PosL = n.subscribe("/fivebarTrailer/PosL/value", 1, chatterCallbackL);
-  PosR = n.subscribe("/fivebarTrailer/PosR/value", 1, chatterCallbackR);
 
+  // Clients for the set motor position
+  leftMotorClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorL/set_position");
+  rightMotorClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorR/set_position");
+
+  // Set Service
+  ros::ServiceServer motorService = n.advertiseService("motorSetPos", setPos);
+  //new_controller::set_pos motorSrv;
+
+  // Set function to read out encoder postion
+  robotController rc;
+  ros::Subscriber posL = n.subscribe("/fivebarTrailer/PosL/value", 1, &robotController::posCallbackL, &rc);
+  ros::Subscriber posR = n.subscribe("/fivebarTrailer/PosR/value", 1, &robotController::posCallbackR, &rc);
+
+  // Set publisher
+  ros::Publisher encoderPub = n.advertise<new_controller::motor_pos>("encoderData", 10);
+  // message for the encoder
+  new_controller::motor_pos encoderMsg;
+  
   // main loop
     while (ros::ok()) {
-      // Run through random motor positions
-      
-      for (int i = 1; i <= 100; ++i) {
-        lposition = i*0.02;
-        ROS_INFO("%d, Setting left motor to position: %f", i,lposition);
-        leftMotorSrv.request.value = lposition;
-        leftMotorClient.call(leftMotorSrv);
-        ros::spinOnce();
-        r.sleep();
-      }
-
-      for (int i = 100; i >= 0; --i) {
-        lposition = i*0.02;
-        ROS_INFO("%d, Setting left motor to position: %f", i,lposition);
-        leftMotorSrv.request.value = lposition;
-        leftMotorClient.call(leftMotorSrv);
-        ros::spinOnce();
-        r.sleep();
-      }
-      for (int i = 1; i <= 100; ++i) {
-        rposition = i*0.02;
-        ROS_INFO("%d, Setting right motor to position: %f", i, rposition);
-        rightMotorSrv.request.value = rposition;
-        rightMotorClient.call(rightMotorSrv);
-        ros::spinOnce();
-        r.sleep();
-      }
-      for (int i = 100; i >= 0; --i) {
-        rposition = i*0.02;
-        ROS_INFO("%d, Setting right motor to position: %f", i, rposition);
-        rightMotorSrv.request.value = rposition;
-        rightMotorClient.call(rightMotorSrv);
-        ros::spinOnce();
-        r.sleep();
-      }
+      encoderMsg.theta_1 = rc.theta_1;
+      encoderMsg.theta_2 = rc.theta_2;
+      encoderMsg.simuTime = rc.simTime;
+      encoderPub.publish(encoderMsg);
+      ros::spinOnce();
     }
 }
