@@ -11,6 +11,9 @@ __pycache__/
 *.png
 *.jpg
 
+# Ignore webots in progress files
+*.wbproj
+
 #ignore videos
 *.MP4
 Image_aquisistion/image_details.json
