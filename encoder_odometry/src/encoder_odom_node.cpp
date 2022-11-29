@@ -126,7 +126,7 @@ int main(int argc, char** argv){
         current_time = ros::Time::now();
 
         //Compute world coordinates
-        ddr_position.get_new_transform(1, -1);
+        ddr_position.get_new_transform(1, 1);
         /*
         //Publish the transform over tf2
         geometry_msgs::TransformStamped odom_trans;
@@ -145,7 +145,7 @@ int main(int argc, char** argv){
         //Publish the odometry message over ROS
         nav_msgs::Odometry odom;
         odom.header.stamp = current_time;
-        odom.header.frame_id = "odom";
+        odom.header.frame_id = "world_frame";
 
         //Set the position
         odom.pose.pose.position.x = ddr_position.get_x();

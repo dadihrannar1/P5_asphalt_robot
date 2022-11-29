@@ -349,7 +349,7 @@ def vision_pub(data_in, lock_in, event_in):
             tf_msg = nav_msgs.Odometry()
             tf_msg.header.stamp.secs = secs
             tf_msg.header.stamp.nsecs = nsecs
-            tf_msg.header.frame_id = "odom"
+            tf_msg.header.frame_id = "world_frame"
             tf_msg.child_frame_id = "vo"
 
             # Add twist
@@ -378,7 +378,7 @@ def vision_pub(data_in, lock_in, event_in):
             for path in local_data.path:
                 #geometry_msgs PointStamped Message
                 message = geo_msgs.PointStamped()
-                message.header.frame_id = "points"
+                message.header.frame_id = "world_frame"
                 message.header.stamp.secs = secs
                 message.header.stamp.nsecs = nsecs
                 message.point.x = path[0] 

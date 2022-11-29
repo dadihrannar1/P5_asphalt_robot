@@ -1,6 +1,6 @@
 <launch>
-  <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen"/>
-  <node name="vision" pkg="vision" type="vision_node.py" output="screen"/>
+  <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen"/>
+  <node name="vision" pkg="vision" type="vision_node.py" output="screen"/>
 
 
 <!-- Working launch file, inorder to run. You have to be in:
@@ -10,8 +10,9 @@
 
 
 <!-- Frame transformations are made with args="x y z yaw pitch roll frame_id child_frame"(just estimations now!)-->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="odom2" args="0 0 0.3 0 0 0 odom base_link" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_frame" args="0 -1 1.75 0 1 0 camera_frame camera_link" />
+<!--  <node pkg="tf2_ros" type="static_transform_publisher" name="odom2" args="0 0 0.3 0 0 0 odom base_link" />-->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_transform" args="0 -1 1.75 0 0 0 base_link camera_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_robot_transform" args="0 -1 1.75 0 0 0 base_link robot_frame" />
 
 <!-- Remapping to fit topics in the robot_pose_ekf package -->
   <!--remap from="/odom" to="robot_pose_ekf/vo"/-->
@@ -22,10 +23,10 @@ The filter matches the relative world coordinates from the odom_frame and the ca
 It returns a single estimated postion, based on the sensors' "error" covariances/-->
 
   <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" >
-    <param name="output_frame" value="odom"/>
-    <remap from="odom" to="/odom"/>
-    <param name="base_footprint_frame" value="base_footprint"/>
-    <param name="freq" value="1"/>
+    <param name="output_frame" value="world_frame"/>
+  <!--  <remap from="world" to="/odom"/>-->
+    <param name="base_footprint_frame" value="base_link"/>
+    <param name="freq" value="10"/>
     <param name="sensor_timeout" value="1.0"/>
     <param name="odom_used" value="true"/>
     <param name="imu_used" value="false"/>
@@ -36,6 +37,6 @@ It returns a single estimated postion, based on the sensors' "error" covariances
   
   </node>
   <!-- Remapping ekf to base_link as the estimated frame -->
-  <remap from="/odom_combined" to="/base_footprint"/>
+  <remap from="/odom_combined" to="/base_link"/>
 
 </launch>
