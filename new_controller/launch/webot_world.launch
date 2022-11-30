@@ -10,7 +10,7 @@
     <arg name="world" value="$(find new_controller)/worlds/Fivebar_2022version.wbt"/>
   </include>
 
-  <!--arg name="auto_close" default="false" doc="Startup mode"/>
-  <node name="manipulator" pkg="new_controller" type="manipulator" required="$(arg auto_close)"/-->
+  <arg name="auto_close" default="false" doc="Startup mode"/>
+  <node name="manipulator" pkg="new_controller" type="manipulator" required="$(arg auto_close)"/>
 </launch>
 
