@@ -11,8 +11,9 @@
 
 <!-- Frame transformations are made with args="x y z yaw pitch roll frame_id child_frame"(just estimations now!)-->
 <!--  <node pkg="tf2_ros" type="static_transform_publisher" name="odom2" args="0 0 0.3 0 0 0 odom base_link" />-->
-  <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_transform" args="0 -1 1.75 0 0 0 base_link camera_frame" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_robot_transform" args="0 -1 1.75 0 0 0 base_link robot_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_transform" args="0 0 0 0 0 0 base_link camera_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_robot_transform" args="0 0 0 0 0 0 base_link robot_frame" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_vo_transform" args="1 1 0 0 0 0 base_link vo_camera_frame" />
 
 <!-- Remapping to fit topics in the robot_pose_ekf package -->
   <!--remap from="/odom" to="robot_pose_ekf/vo"/-->

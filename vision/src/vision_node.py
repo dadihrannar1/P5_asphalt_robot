@@ -305,10 +305,35 @@ def angle_add(angle_1, angle_2):
     elif(angle_1 + angle_2 < 0): return angle_1 + angle_2 + 2*math.pi
     else: return angle_1 + angle_2
 
+#Function to transform a coordinate into world coordinates
+def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transform):
+    if not isinstance(transform, geo_msgs.Transform):
+        raise TypeError
+    else:
+        # 4x4 transformation matrix from quaternion and translation
+        quaternion = np.array([transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w])
+        transformation = tf_convert.quaternion_matrix(quaternion)
+        transformation[0, 3] = transform.translation.x
+        transformation[1, 3] = transform.translation.y
+        transformation[2, 3] = transform.translation.z
+
+        # Crack coordinate as pose
+        point = np.array([[x_coordinate], [y_coordinate], [0], [1]])
+
+        # Transform coordinate 
+        result = np.dot(transformation, point)
+        x = result[0, 0]
+        y = result[1, 0]
+        return x, y
+
 def vision_pub(data_in, lock_in, event_in):
         rospy.init_node('vision_publisher', anonymous=True)
         point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size = 10)
         transform_pub = rospy.Publisher('vo', nav_msgs.Odometry, queue_size = 50)
+
+        # Transform listener for getting the ekf transform /vo_camera_frame -> /world_frame
+        tf_buffer = tf2_ros.Buffer(rospy.Time(100))
+        tf_listener = tf2_ros.TransformListener(tf_buffer)
 
         r = rospy.Rate(100) #100hz
 
@@ -316,6 +341,8 @@ def vision_pub(data_in, lock_in, event_in):
         world_pose_y = 0
         world_orientation = 0
 
+        # Scalar from pixels to distances in camera frame
+        PIXEL_SIZE = 1.4/320 #In meters
         STANDARD_COVARIANCE = [0.05, 0.006, 0.01, 0.01, 0.01, 0.000009,
                             0.006, 0.05, 0.01, 0.01, 0.01, 0.01,
                             0.01, 0.01, 0.05, 0.01, 0.01, 0.01,
@@ -353,8 +380,8 @@ def vision_pub(data_in, lock_in, event_in):
             tf_msg.child_frame_id = "vo"
 
             # Add twist
-            tf_msg.twist.twist.linear.x = traveled_x
-            tf_msg.twist.twist.linear.y = traveled_y
+            tf_msg.twist.twist.linear.x = traveled_x * PIXEL_SIZE
+            tf_msg.twist.twist.linear.y = traveled_y * PIXEL_SIZE
             tf_msg.twist.twist.linear.z = 0.0
             tf_msg.twist.twist.angular.x = 0.0
             tf_msg.twist.twist.angular.y = 0.0
@@ -362,8 +389,8 @@ def vision_pub(data_in, lock_in, event_in):
             tf_msg.twist.covariance = STANDARD_COVARIANCE
 
             # Add pose
-            tf_msg.pose.pose.position.x = world_pose_x
-            tf_msg.pose.pose.position.y = world_pose_y
+            tf_msg.pose.pose.position.x = world_pose_x * PIXEL_SIZE
+            tf_msg.pose.pose.position.y = world_pose_y * PIXEL_SIZE
             tf_msg.pose.pose.position.z = 0.0
             quat = tf_convert.quaternion_from_euler(0, 0, world_orientation)
             tf_msg.pose.pose.orientation.x = quat[0]
@@ -374,19 +401,30 @@ def vision_pub(data_in, lock_in, event_in):
 
             transform_pub.publish(tf_msg)
 
-            # Send each 
-            for path in local_data.path:
-                #geometry_msgs PointStamped Message
-                message = geo_msgs.PointStamped()
-                message.header.frame_id = "world_frame"
-                message.header.stamp.secs = secs
-                message.header.stamp.nsecs = nsecs
-                message.point.x = path[0] 
-                message.point.y = path[1] 
-                message.point.z = path[2] # Used for sending the end of crack information
+            # Get transform from camera to world for current image
+            try:
+                transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'vo_camera_frame', rospy.Time(secs, nsecs))
+            
+                # Send each point in crack trajectory
+                for path in local_data.path:
+                    #geometry_msgs PointStamped Message
+                    message = geo_msgs.PointStamped()
+                    message.header.frame_id = "world_frame"
+                    message.header.stamp.secs = secs
+                    message.header.stamp.nsecs = nsecs
+                    coords = transform_coordinates(path[0] * PIXEL_SIZE, path[1] * PIXEL_SIZE, transform_camera_to_world.transform)
+                    message.point.x = coords[0]
+                    message.point.y = coords[1]
+                    message.point.z = path[2] # Used for sending the end of crack information
 
-                point_pub.publish(message)
+                    point_pub.publish(message)
+                    r.sleep()
+
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as exception:
+                print(exception)
+                # For first transform publish again to ensure transform is available for first point
                 r.sleep()
+                continue
 
 
 #
