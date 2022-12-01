@@ -17,7 +17,7 @@
   MotorL
         Theta = p-2.33874
 */
-
+#include <istream>
 
 #include "ros/ros.h"
 
@@ -65,18 +65,38 @@ class robotController{
 // Function for setting the motors in a desired position
 bool setPos(new_controller::set_pos::Request &msg,
             new_controller::set_pos::Response &nah){
-  double posL = msg.theta_1+2.33874;
-  double posR = msg.theta_2-1.8675;
+  ROS_INFO("theta1 %f theta2 %f" ,msg.theta_1, msg.theta_2);
 
+  double posL = -msg.theta_1+2.33874;
+  double posR = msg.theta_2-1.8675;
+      
+  posL = fmod(posL+M_PI, 2*M_PI);
+  posR = fmod(posR + M_PI, 2*M_PI);
+  if(posL < 0)
+  {
+    posL += 2*M_PI;
+  }
+  if(posR < 0)
+  {
+    posR += 2*M_PI;
+  }
+  
+  posL -= M_PI;
+  posR -= M_PI;
+  
   // define and publish
   webots_ros::set_float leftMotorSrv; webots_ros::set_float rightMotorSrv;
   leftMotorSrv.request.value = posL;
   rightMotorSrv.request.value = posR;
+  ROS_INFO("posL %f posR %f", posL, posR);
   leftMotorClient.call(leftMotorSrv);
   rightMotorClient.call(rightMotorSrv);
-
+  
   return true;
-            }
+  
+  
+
+  }
 
 int main(int argc, char **argv) {
   // create a node named 'test_movement' on ROS network
@@ -121,6 +141,7 @@ int main(int argc, char **argv) {
       encoderMsg.theta_2 = rc.theta_2;
       encoderMsg.simuTime = rc.simTime;
       encoderPub.publish(encoderMsg);
+      
       ros::spinOnce();
     }
 }

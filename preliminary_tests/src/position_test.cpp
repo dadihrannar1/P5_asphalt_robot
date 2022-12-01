@@ -2,9 +2,10 @@
 #include <cmath>
 
 #include <webots_ros/set_int.h>
-
-#include <new_controller/set_pos.h>
+#include <pretests/set_pos.h>
 #include <geometry_msgs/PointStamped.h>
+
+#define TIME_STEP 32
 
 // Robot lengths
 int L0 = 290;
@@ -15,7 +16,11 @@ int L2 = 595;
 float x;
 float y;
 
-int * generateCoord(){
+// Global variables for calculatred angles
+float angl1;
+float angl2;
+
+int *generateCoord(){
   // We are returning pointers, aka static variables are needed
   static int w_pos[10];
 
@@ -34,7 +39,7 @@ int * generateCoord(){
 }
 
 
-float *invKin(float xPos, float yPos)
+float invKin(float xPos, float yPos)
 {
   float F0 = sqrt(pow(xPos, 2) + pow(yPos, 2));
   float F1 = sqrt(pow((L0 - xPos), 2) + pow(yPos, 2));
@@ -45,14 +50,17 @@ float *invKin(float xPos, float yPos)
   float Theta1 = y00 + y01;
   float Theta2 = y10 + y11;
 
-  static float Angl[] = {Theta1, Theta2};
-  return Angl;
+  angl1 = Theta1;
+  angl2 = Theta2;
+
+  
+  return 0;
 }
 
 void callback(const geometry_msgs::PointStamped::ConstPtr &value){
-  //ROS_INFO("x = %f, y = %f, z = %f", value->point.x,value->point.y,value->point.z);
-  x = -(value->point.z+L0/2);
-  y = -value->point.y;
+  ROS_INFO("x = %f, y = %f, z = %f", value->point.x,value->point.y,value->point.z);
+  x = -(value->point.z*1000+L0/2);
+  y = -value->point.y*1000;
 }
 
 int main(int argc, char **argv)
@@ -66,13 +74,13 @@ int main(int argc, char **argv)
   ROS_INFO("start");
   // Setting up the webots timeStep messages
   webots_ros::set_int timeStepSrv;
-  timeStepSrv.request.value = 32;
+  timeStepSrv.request.value = TIME_STEP;
   // Enable the GPS in webots
   ros::ServiceClient gpsClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/NozzlePos/enable");
-  ros::ServiceClient motorClient = n.serviceClient<new_controller::set_pos>("motorSetPos");
+  ros::ServiceClient motorClient = n.serviceClient<pretests::set_pos>("motorSetPos");
   gpsClient.call(timeStepSrv);
 
-  new_controller::set_pos motorSrv; // This is the message for the motor node
+  pretests::set_pos motorSrv; // This is the message for the motor node
 
   ros::Subscriber gpsSub = n.subscribe("/fivebarTrailer/NozzlePos/values", 1, callback); // GPS pos
 
@@ -84,15 +92,16 @@ int main(int argc, char **argv)
     for(int n=0; n<10;n=n+2){
       // The *(<variable>+value) is to get the next value in a pointer, sorta like an array
       float *thetas; 
-      thetas = invKin(*(w_pos+n), *(w_pos+n+1));
-      ROS_INFO("\nDesired pos = %d, %d\n Calculated angle = %f,%f",*(w_pos+n),*(w_pos+n+1),*(thetas+0),*(thetas+1));
-      motorSrv.request.theta_1 = *(thetas+0);
-      motorSrv.request.theta_2 = *(thetas+1);
+      invKin(*(w_pos+n), *(w_pos+n+1));
+      ROS_INFO("\nDesired pos = %d, %d\n Calculated angle = %f,%f\n x y = %f, %f",*(w_pos+n),*(w_pos+n+1),angl1, angl2, x , y);
+      motorSrv.request.theta_1 = angl1;
+      motorSrv.request.theta_2 = angl2;
       motorClient.call(motorSrv);
       ros::Duration(2.0).sleep();
+      ros::spinOnce();
     }
     
   }
-  ros::spin();
+  
   return 0;
 }

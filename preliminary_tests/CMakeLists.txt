@@ -52,8 +52,12 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
 FILES	
-vision_out.msg
+#vision_out.msg
 )
+add_service_files(
+    FILES
+    set_pos.srv
+  )
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
