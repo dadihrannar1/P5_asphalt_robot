@@ -8,6 +8,7 @@ import networkx as nx
 from sklearn.neighbors import NearestNeighbors
 from scipy.spatial import distance
 from scipy import signal
+import warnings
 
 
 #TODO this class should be cleaned up
@@ -367,9 +368,9 @@ def process_image(img):
 
 
 # Function to calculate the length the robot needs to travel to follow a trajectory
-def calculate_trajectory_length(trajectory, current_pos):
+def calculate_trajectory_length(trajectory: np.array, current_pos: np.array):
     # Turn trajectory from strings to proper format
-    trajectory = np.column_stack([trajectory[:, 0:2].astype(int), np.where(trajectory[:, 2] == 'true', 1, 0)])
+    trajectory = np.column_stack([trajectory[:, 0:2].astype(int), trajectory[:, 2]])
 
     # Calculate distance between all points in trajectory
     dist_between_points = distance.cdist(trajectory[:, 0:2], trajectory[:, 0:2], metric='euclidean').diagonal(1)
