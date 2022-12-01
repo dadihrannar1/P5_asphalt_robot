@@ -194,7 +194,7 @@ Robot {
                     HingeJoint {
                       jointParameters HingeJointParameters {
                         axis 0 1 0
-                        anchor 1.1898 -0.26091 -0.087
+                        anchor 1.15764 -0.26091 -0.087
                         staticFriction 200000
                       }
                       endPoint Solid {
@@ -359,7 +359,7 @@ Robot {
                     HingeJoint {
                       jointParameters HingeJointParameters {
                         axis 0 1 0
-                        anchor 1.1898 -0.26091 -0.087
+                        anchor 1.15764 -0.26091 -0.087
                       }
                       endPoint SolidReference {
                         solidName "rightEndArm"

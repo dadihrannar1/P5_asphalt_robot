@@ -67,8 +67,8 @@ bool setPos(new_controller::set_pos::Request &msg,
             new_controller::set_pos::Response &nah){
   ROS_INFO("theta1 %f theta2 %f" ,msg.theta_1, msg.theta_2);
 
-  double posL = -msg.theta_1+2.33874;
-  double posR = msg.theta_2-1.8675;
+  double posL = msg.theta_1-(M_PI-1.3636257);
+  double posR = -msg.theta_2+(M_PI-1.5636405);
       
   posL = fmod(posL+M_PI, 2*M_PI);
   posR = fmod(posR + M_PI, 2*M_PI);
