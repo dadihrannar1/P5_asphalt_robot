@@ -97,7 +97,7 @@ def frames_from_camerastream(data_out, lock, event):
             lock.release()
 
 
-def frames_from_files(data_out, lock, event):
+def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     path_string = current_path + '/test_images/realistic_split_'
     print('starting image load from: ' + path_string + '#.png')
 
@@ -110,12 +110,17 @@ def frames_from_files(data_out, lock, event):
             frame = cv2.imread(path_string + str(i) + '.png')
             i = i + 1
 
+            event_transmit_ready.wait()
+            event_transmit_ready.clear()
+
             lock.acquire()
             data_out.set_data(frame)
             data_out.set_frame_time(frame_time)
-            event.set()
             lock.release()
 
+            event_transmit.set()
+            #print('Thread 1 sent data')
+            
             time.sleep(5) #wait 5 seconds until noading next image
         else:
             exit('no more files to load')
@@ -123,7 +128,7 @@ def frames_from_files(data_out, lock, event):
 
 ##Function to run model from specifed path
 # Run as a seperate thread for the program
-def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
+def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transmit_ready, event_receive, event_receive_ready):
     # Load trained model ffrom specifed path
     model = load_model(current_path + '/' + model_name)
 
@@ -144,17 +149,22 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
     traveled_y = 0
     angle = 0
 
+    event_receive_ready.set()
+
     # Main thread loop
     print('Thread 2 started (run_model)')
     while(True):
-        event_in.wait() # Wait for event flag from the image acquisition thread
-        event_in.clear() # Clear event flag before processing starts (allows a new flag to arrive before processing finishes)
+        event_receive.wait() # Wait for event flag from the image acquisition thread
+        event_receive.clear() # Clear event flag before processing starts (allows a new flag to arrive before processing finishes)
 
         # Lock data while it is being read by the thread
         lock_in.acquire()
         local_image = data_in.get_data()
         local_frame_time = data_in.get_frame_time()
         lock_in.release()
+
+        event_receive_ready.set()
+        #print('Thread 2 got data')
         
         # 
         if img_raw_old.any():
@@ -176,28 +186,32 @@ def run_model(data_in, data_out, lock_in, lock_out, event_in, event_out):
         img_raw_old = cv2.resize(img_raw_old,(480,320),interpolation=cv2.INTER_AREA)
         img_raw_old = cv2.cvtColor(img_raw_old,cv2.COLOR_BGR2GRAY)
         
+        event_transmit_ready.wait()
+        event_transmit_ready.clear()
+
         # Send data to path planning thread
         lock_out.acquire()
         data_out.set_data(preds.cpu().numpy())
         data_out.set_frame_time(local_frame_time)
         data_out.set_image_offset(angle, traveled_x, traveled_y)
-
-        # Set event flag for path planning thread
-        event_out.set()
         lock_out.release()
 
+        event_transmit.set()
+        #print('Thread 2 sent data')
 
-def path_planning(data_in, data_out, lock_in, lock_out, event_in, event_out):
+
+def path_planning(data_in, data_out, lock_in, lock_out, event_transmit, event_transmit_ready, event_receive, event_receive_ready):
     img_old_seg = np.zeros(([2, 2]), dtype=np.uint8)
     old_frame = 0
     traveled = 0
 
+    event_receive_ready.set()
+
     # Main thread loop
     print('Thread 3 started (path_planning)')
     while True:
-        event_in.wait()    # Wait for new image
-        event_in.clear()   # Clear event
-        start_time = time.time()
+        event_receive.wait()    # Wait for new image
+        event_receive.clear()   # Clear event
         
         # Get data if lock is free
         lock_in.acquire()
@@ -205,6 +219,10 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_in, event_out):
         local_frame_time = data_in.get_frame_time()
         angle, traveled_x, traveled_y = data_in.get_image_offset()
         lock_in.release()
+
+        event_receive_ready.set()
+        #print('Thread 3 got data')
+
         sorted_cracks = process_image(local_img)
         
         img_old_seg = local_img
@@ -221,18 +239,23 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_in, event_out):
         frame1.find_path()
        
         old_frame = copy.copy(frame1)
+
+        event_transmit_ready.wait()
+        event_transmit_ready.clear()
         
         # Set data if lock is free
         lock_out.acquire()
         data_out.set_data(frame1)
         data_out.set_frame_time(local_frame_time)
         data_out.set_image_offset(angle, traveled_x, traveled_y)
-        event_out.set()
         lock_out.release()
+
+        event_transmit.set()
+        #print('Thread 3 sent data')
         
-        #frame0Vis = visualize(frame1, frame1.path,320*0.75)
-        #cv2.imshow("crack visualisation", frame0Vis)
-        #cv2.waitKey(10)
+        frame0Vis = visualize(frame1, frame1.path,320*0.75)
+        cv2.imshow("crack visualisation", frame0Vis)
+        cv2.waitKey(10)
 
 #Visualise cracks for debugging
 def visualize(frame: Frame, p1, offset):
@@ -326,7 +349,7 @@ def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transf
         y = result[1, 0]
         return x, y
 
-def vision_pub(data_in, lock_in, event_in):
+def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         rospy.init_node('vision_publisher', anonymous=True)
         point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size = 10)
         transform_pub = rospy.Publisher('vo', nav_msgs.Odometry, queue_size = 50)
@@ -350,11 +373,13 @@ def vision_pub(data_in, lock_in, event_in):
                             0.01, 0.01, 0.01, 0.01, 0.09, 0.01,
                             0.000009, 0.01, 0.01, 0.01, 0.01, 0.09]
 
+        event_receive_ready.set()
+
         print('Thread 4 started (vision_pub)')
         while not rospy.is_shutdown():
             # Wait for event flag for new trajectory
-            event_in.wait()
-            event_in.clear()
+            event_receive.wait()
+            event_receive.clear()
 
             # Fetch trajectory
             lock_in.acquire()
@@ -362,6 +387,9 @@ def vision_pub(data_in, lock_in, event_in):
             local_frame_time = data_in.get_frame_time()
             angle, traveled_x, traveled_y = data_in.get_image_offset()
             lock_in.release()
+
+            event_receive_ready.set()
+            #print('Thread 4 got data')
 
             # Split timestamp to secs and nsecs
             nsecs = local_frame_time % int(1000000000)
@@ -445,14 +473,26 @@ if __name__ == "__main__":
     BaseManager.register('DataTransfer', DataTransfer)
 
     # Locks
+    thread_1_to_2_data_lock = Lock()
+    thread_2_to_3_data_lock = Lock()
+    thread_3_to_4_data_lock = Lock()
+
     img_raw_lock = Lock()
     img_seg_lock = Lock()
     path_lock = Lock()
 
     # Events
-    img_raw_event = Event()     # Start thread 2
-    img_seg_event = Event()     # Start thread 3
-    transmit_event = Event()    # Start thread 4
+    thread_1_data_available = Event()  # Thread 1 has raw image ready
+    thread_2_data_available = Event()  # Thread 2 has segmented image ready
+    thread_3_data_available = Event()  # Thread 3 has path ready
+
+    thread_2_ready_for_data = Event()  # Thread 2 is ready to receive raw image
+    thread_3_ready_for_data = Event()  # Thread 3 is ready to receive segmented image
+    thread_4_ready_for_data = Event()  # Thread 4 is ready to receive path
+
+    img_raw_event = Event()     # Data available from thread 1
+    img_seg_event = Event()     # Data available from thread 2
+    transmit_event = Event()    # Data available from thread 3
     
     # Manager setup
     manager_raw_img = BaseManager()
@@ -471,27 +511,34 @@ if __name__ == "__main__":
     t1 = Process(target=frames_from_files, args=(
         data_raw_img,
         img_raw_lock,
-        img_raw_event
+        thread_1_data_available,
+        thread_2_ready_for_data
         ))
     t2 = Process(target=run_model, args=(
         data_raw_img, 
         data_seg_img,  
         img_raw_lock, 
         img_seg_lock, 
-        img_raw_event,
-        img_seg_event,))
+        thread_2_data_available,
+        thread_3_ready_for_data,
+        thread_1_data_available,
+        thread_2_ready_for_data
+        ))
     t3 = Process(target=path_planning, args=(
         data_seg_img, 
         data_path, 
         img_seg_lock,
         path_lock,
-        img_seg_event,
-        transmit_event
+        thread_3_data_available,
+        thread_4_ready_for_data,
+        thread_2_data_available,
+        thread_3_ready_for_data
         ))
     t4 = Process(target=vision_pub, args=(
         data_path, 
         path_lock, 
-        transmit_event
+        thread_3_data_available,
+        thread_4_ready_for_data
         ))
 
     # Start processes and join datatransmission
