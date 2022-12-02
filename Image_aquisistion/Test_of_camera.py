@@ -4,13 +4,14 @@ import time
 import json
 import serial
 # opens connections to arduino
-arduino = serial.Serial(port='COM6', baudrate=57600, timeout=.1)
-time.sleep(1)
+arduino = serial.Serial(port='COM8', baudrate=57600, timeout=.1)
+time.sleep(0.1)
 arduino.flushInput()
 # number written to the arduino to synchronise python and the arduino, if it does'nt try putting a 1 inside the "".
 sync = "1"
 
-#reformating the serial read from the arduino
+
+# reformating the serial read from the arduino
 def conversion():
     data = str(arduino.readlines())
     print(data)
@@ -27,7 +28,7 @@ def conversion():
 tik = time.time()
 
 # define a video capture object
-#vid = cv.VideoCapture(0)
+vid = cv.VideoCapture(2)
 
 frequensy_of_images= 1 #seconds between image is taken
 num_image = 0 # variable that iterates for image taken
@@ -38,9 +39,9 @@ timer = []
 encoder1 = []
 encoder2 = []
 
-save_path = "/Image_aquisistion/Images"
-if not os.path.exists(os.getcwd() + save_path):
-    os.makedirs(os.getcwd() + save_path)
+save_path = "Image_aquisistion/Images"
+if not os.path.exists(os.getcwd() + "/" + save_path):
+    os.makedirs(os.getcwd() + "/" + save_path)
 
 while(True):
     # Capture the video frame
@@ -53,7 +54,7 @@ while(True):
         timer.append(time_stamp)
         encoder1.append(delta1)
         encoder2.append(delta2) 
-        filename=f"{save_path}/saved_image_%s.png" % num_image
+        filename=f"{save_path}/saved_image_{num_image}.png"
         image.append(filename)
         cv.imwrite(filename, frame)
         num_image = num_image+1
@@ -72,7 +73,7 @@ while(True):
 vid.release()
 full_list = [image, timer, encoder1,encoder2]
 dump = json.dumps(full_list)
-with open("Image_aquisistion/image_details.json", "w") as outfile:
+with open("Image_aquisistion/Images/image_details.json", "w") as outfile:
     outfile.write(dump)
 
 # Destroy all the windows

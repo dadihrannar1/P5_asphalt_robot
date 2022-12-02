@@ -17,7 +17,7 @@ int onlyforward=0;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(57600);
+  Serial.begin(115200);
 }
 
 unsigned long last_time = 0;
@@ -25,17 +25,18 @@ void loop() {
   unsigned long Timer= millis();
   // put your main code here, to run repeatedly:
   // checks if the reflection is white or black
-  float sens1 = analogRead(A2);
-  float sens2 = analogRead(A3);
-  float sens3 = analogRead(A0);
-  float sens4 = analogRead(A1);
-  peakValue(sens1,sens2,sens3,sens4);
-  bool sens_1_read = bool_read(sens1, 100);
+  int sens1 = analogRead(A2);
+  int sens2 = analogRead(A3);
+  int sens3 = analogRead(A0);
+  int sens4 = analogRead(A1);
+  //peakValue(sens1,sens2,sens3,sens4);
+  bool sens_1_read = bool_read(sens1, 150);
   bool sens_2_read = bool_read(sens2, 90);
   bool sens_3_read = bool_read(sens3, 40);
   bool sens_4_read = bool_read(sens4, 100);
 
 // test to see if the sensors are reading
+/*
 if (tester == 1){ 
   //Serial.print("sens1:");
   //Serial.println(peak1);
@@ -86,10 +87,10 @@ if (sens_1_read != sens_1_state){
  }
 else{
 
-
+*/
 // Checks the state of the sensor to show how many ticks the wheel has gone around.
-if (sens_1_read != sens_1_state){
-  if(sens_2_read != sens_1_read){
+if (sens_2_read != sens_2_state){
+  if(sens_1_read != sens_2_read){
     delta1 -= 1;
   }
   else{
@@ -103,7 +104,7 @@ if (sens_3_read != sens_3_state){
   else{
     delta2 -=1;
   }
-}
+//}
 //  if ((sens_1_read != sens_1_state && sens_1_read == sens_2_state) || (sens_2_read != sens_2_state && sens_2_read != sens_1_state)){
 //    delta1 += 1;
 //  }
