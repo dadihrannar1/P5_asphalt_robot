@@ -253,9 +253,9 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_transmit, event_tr
         event_transmit.set()
         #print('Thread 3 sent data')
         
-        frame0Vis = visualize(frame1, frame1.path,320*0.75)
-        cv2.imshow("crack visualisation", frame0Vis)
-        cv2.waitKey(10)
+        #frame0Vis = visualize(frame1, frame1.path,320*0.75)
+        #cv2.imshow("crack visualisation", frame0Vis)
+        #cv2.waitKey(10)
 
 #Visualise cracks for debugging
 def visualize(frame: Frame, p1, offset):
@@ -294,34 +294,6 @@ def visualize(frame: Frame, p1, offset):
         
     return blank_image
 
-
-"""
-def transmit_trajectory(data_in, lock_in, event_in):
-    # Main thread loop
-    print('Thread 4 started (transmit_trajectory)')
-    while True:
-        # Wait for event flag for new trajectory
-        event_in.wait()
-        event_in.clear()
-
-        # Fetch trajectory
-        lock_in.acquire()
-        local_data = data_in.get_data()
-        lock_in.release()
-        
-        # Send each 
-        for path in local_data.path:
-            Data = {
-                "Position": {
-                     "X": path[0],
-                     "Y": path[1]
-                    },
-                "Time": {"Detected": local_data.get_frame_time()},
-                "Crack": {"DetectionIndex": path[2]} # Boolean (true when a crack starts or ends)
-                }
-            #print('Position: (X: ' + str(path[0]) + ', Y: ' + str(path[1]) + ')\nTime: ' + str(local_data.get_frame_time()) + ' Crack: ' + str(path[2]))
-"""
-
 #Function for adding angles bounded to [0, 2*PI[
 def angle_add(angle_1, angle_2):
     if(angle_1 + angle_2 >= 2*math.pi): return angle_1 + angle_2 - 2*math.pi
@@ -355,7 +327,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         transform_pub = rospy.Publisher('vo', nav_msgs.Odometry, queue_size = 50)
 
         # Transform listener for getting the ekf transform /vo_camera_frame -> /world_frame
-        tf_buffer = tf2_ros.Buffer(rospy.Time(100))
+        tf_buffer = tf2_ros.Buffer()#rospy.Time(100))
         tf_listener = tf2_ros.TransformListener(tf_buffer)
 
         r = rospy.Rate(100) #100hz
@@ -365,7 +337,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         world_orientation = 0
 
         # Scalar from pixels to distances in camera frame
-        PIXEL_SIZE = 1.4/320 #In meters
+        PIXEL_SIZE = 1.6/WIDTH #In meters
         STANDARD_COVARIANCE = [0.05, 0.006, 0.01, 0.01, 0.01, 0.000009,
                             0.006, 0.05, 0.01, 0.01, 0.01, 0.01,
                             0.01, 0.01, 0.05, 0.01, 0.01, 0.01,
@@ -454,7 +426,6 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
                 r.sleep()
                 continue
 
-
 #
 def shutoffthread(process):
     import sys
@@ -464,12 +435,7 @@ def shutoffthread(process):
     sys.exit(1)
 
 
-
-
-
-
 if __name__ == "__main__":
-
     BaseManager.register('DataTransfer', DataTransfer)
 
     # Locks
@@ -552,80 +518,3 @@ if __name__ == "__main__":
 
     for process in processes:
         process.join()   
-
-
-          
-
-
-
-    # Thread initialization
-
-
-
-    
-
-
-"""
-
-if __name__ == "__main__":
-    BaseManager.register('DataTransfer', DataTransfer)
-
-    # Locks
-    img_raw_lock = Lock()
-    img_seg_lock = Lock()
-    path_lock = Lock()
-
-    # Events
-    img_raw_event = Event()     # Start thread 2
-    img_seg_event = Event()     # Start thread 3
-    transmit_event = Event()    # Start thread 4
-    
-    # Manager setup
-    manager_raw_img = BaseManager()
-    manager_seg_img = BaseManager()
-    manager_path = BaseManager()
-    
-    manager_raw_img.start()
-    manager_seg_img.start()
-    manager_path.start()
-    
-    data_raw_img = manager_raw_img.DataTransfer()
-    data_seg_img = manager_seg_img.DataTransfer()
-    data_path = manager_path.DataTransfer()
-
-    # Thread initialization
-    t1 = Process(target=frames_from_files, args=(
-        data_raw_img,
-        img_raw_lock,
-        img_raw_event
-        ))
-    t2 = Process(target=run_model, args=(
-        data_raw_img, 
-        data_seg_img,  
-        img_raw_lock, 
-        img_seg_lock, 
-        img_raw_event,
-        img_seg_event,))
-    t3 = Process(target=path_planning, args=(
-        data_seg_img, 
-        data_path, 
-        img_seg_lock,
-        path_lock,
-        img_seg_event,
-        transmit_event
-        ))
-    t4 = Process(target=transmit_trajectory, args=(
-        data_path, 
-        path_lock, 
-        transmit_event
-        ))
-
-    # Start processes and join datatransmission
-    processes = [t1,t2,t3,t4]
-
-    for process in processes:
-        process.start()
-
-    for process in processes:
-        process.join()
-"""
