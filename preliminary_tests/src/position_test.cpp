@@ -4,13 +4,15 @@
 #include <webots_ros/set_int.h>
 #include <pretests/set_pos.h>
 #include <geometry_msgs/PointStamped.h>
+#include <vector>
 
 #define TIME_STEP 32
+#define N_TESTS 100
 
 // Robot lengths
-int L0 = 290;
-int L1 = 604;
-int L2 = 595;
+int L0 = 176;
+int L1 = 573;
+int L2 = 714;
 
 // Global variables for read x and y values
 float x;
@@ -20,20 +22,21 @@ float y;
 float angl1;
 float angl2;
 
-int *generateCoord(){
-  // We are returning pointers, aka static variables are needed
-  static int w_pos[10];
+std::vector<int> generateCoord(int amountOfPoints){
+  // Setting a vector in the size we want
+  std::vector<int> w_pos;
+  w_pos.resize(amountOfPoints);
 
   int workspace[4] = {};
   workspace[0] = L0/2-500; // left edge
   workspace[1] = L0/2+500; // right edge
-  workspace[2] = L1-L2; // bottom edge
+  workspace[2] = abs(L1-L2); // bottom edge
   workspace[3] = L1-L2+1000; // top edge
 
-  
-  for(int i=0; i<10; i=i+2){
-      w_pos[i]= workspace[0]+(rand()%(workspace[1]-workspace[0]));// x_pos
-      w_pos[i+1]= workspace[2]+(rand()%(workspace[3]-workspace[2]));// y_pos
+  // vectors work like pointers, so when iterating through them i call their first pointer and then itterate through them
+  for(auto i=w_pos.begin(); i != w_pos.end(); i=i+2){
+      *i= workspace[0]+(rand()%(workspace[1]-workspace[0]));// x_pos
+      *(i+1)= workspace[2]+(rand()%(workspace[3]-workspace[2]));// y_pos
   }
   return w_pos;
 }
@@ -59,7 +62,7 @@ float invKin(float xPos, float yPos)
 
 void callback(const geometry_msgs::PointStamped::ConstPtr &value){
   ROS_INFO("x = %f, y = %f, z = %f", value->point.x,value->point.y,value->point.z);
-  x = -(value->point.z*1000+L0/2);
+  x = (value->point.z*1000+L0/2);
   y = -value->point.y*1000;
 }
 
@@ -79,29 +82,46 @@ int main(int argc, char **argv)
   ros::ServiceClient gpsClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/NozzlePos/enable");
   ros::ServiceClient motorClient = n.serviceClient<pretests::set_pos>("motorSetPos");
   gpsClient.call(timeStepSrv);
+  //GPS needs to start up
+  
 
   pretests::set_pos motorSrv; // This is the message for the motor node
 
   ros::Subscriber gpsSub = n.subscribe("/fivebarTrailer/NozzlePos/values", 1, callback); // GPS pos
 
+  // set a vector class for the wanted positions
+  std::vector<int> w_pos;
+  w_pos.resize(N_TESTS);
+  w_pos = generateCoord(N_TESTS); // generate positions
+
+  float acc_res[N_TESTS][2];
+
+  // First call does not work with the GPS so we just send a dummy pos first
+  motorSrv.request.theta_1 = M_PI/2;
+  motorSrv.request.theta_2 = M_PI/2;
+  motorClient.call(motorSrv);
+  ros::Duration(2).sleep();
+  ros::spinOnce();
+
   // Run through random positions
-  for(int i=0; i<5; i++){
-    int *w_pos;
-    w_pos = generateCoord(); // generate positions
-    ROS_INFO("%d",(w_pos+1));
-    for(int n=0; n<10;n=n+2){
-      // The *(<variable>+value) is to get the next value in a pointer, sorta like an array
-      float *thetas; 
-      invKin(*(w_pos+n), *(w_pos+n+1));
-      ROS_INFO("\nDesired pos = %d, %d\n Calculated angle = %f,%f\n x y = %f, %f",*(w_pos+n),*(w_pos+n+1),angl1, angl2, x , y);
-      motorSrv.request.theta_1 = angl1;
-      motorSrv.request.theta_2 = angl2;
-      motorClient.call(motorSrv);
-      ros::Duration(2.0).sleep();
-      ros::spinOnce();
-    }
-    
+  int j=0; //since we are looping trough pointers I need a different counter
+  for(auto n=w_pos.begin(); n!=w_pos.end();n=n+2){
+    // The *(<variable>+value) is to get the next value in a pointer, sorta like an array
+    invKin(*n, *(n+1));
+    motorSrv.request.theta_1 = angl1;
+    motorSrv.request.theta_2 = angl2;
+    motorClient.call(motorSrv);
+    ros::Duration(0.1).sleep();
+    ros::spinOnce();
+    float x_acc = *n-x;
+    float y_acc = *(n+1)-y;
+    ROS_INFO("\naccuracy in x y = %f, %f",x_acc, y_acc);
+    acc_res[j][0] = x_acc;
+    acc_res[j][1] = y_acc;
+    j++;
   }
+    
+  
   
   return 0;
 }
