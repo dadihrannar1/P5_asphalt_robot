@@ -10,6 +10,20 @@ __pycache__/
 # Ignore images
 *.png
 *.jpg
+*.msg
+
+
+*.srv
+
+
+trajectory_generation/src/Test_Kinematics.py
+
+# Ignore webots in progress files
+*.wbproj
+
+#ignore videos
+*.MP4
+Image_aquisistion/image_details.json
 
 # Ignore webots in progress files
 *.wbproj

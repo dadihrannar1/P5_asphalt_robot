@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(vision)
+project(encoder_odometry)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,11 +10,14 @@ project(vision)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  tf2
+  tf2_ros
+  #std_msgs
+  #message_generation
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -24,7 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
-
+#add_dependencies(vision ${catkin_EXPORTED_TARGETS})
 ## To declare and build messages, services or actions from within this
 ## package, follow these steps:
 ## * Let MSG_DEP_SET be the set of packages whose message types you use in
@@ -49,8 +52,6 @@ find_package(catkin REQUIRED COMPONENTS
 #add_message_files(
 #FILES	
 #vision_out.msg
-#   Message1.msg
-#   Message2.msg
 #)
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -67,10 +68,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#  DEPENDENCIES
-#  std_msgs
- #)
+#generate_messages(
+#DEPENDENCIES
+#std_msgs
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -102,10 +103,13 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES vision
- CATKIN_DEPENDS roscpp rospy
-#  DEPENDS system_lib
+CATKIN_DEPENDS
+roscpp
+rospy
+tf2
+tf2_ros
+#std_msgs
+#message_runtime
 )
 
 ###########
@@ -114,15 +118,9 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-)
 
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/vision.cpp
-# )
+include_directories(${catkin_INCLUDE_DIRS})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -132,23 +130,16 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/vision_node.cpp)
+add_executable(encoder_odom_node src/encoder_odom_node.cpp)
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(encoder_odom_node ${catkin_LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-
-## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
 
 #############
 ## Install ##
@@ -184,9 +175,9 @@ include_directories(
 #   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 # )
 
-catkin_install_python(PROGRAMS
-   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
- )
+#catkin_install_python(PROGRAMS
+#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
@@ -214,3 +205,4 @@ catkin_install_python(PROGRAMS
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+

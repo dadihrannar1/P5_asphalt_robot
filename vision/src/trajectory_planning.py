@@ -8,14 +8,13 @@ import networkx as nx
 from sklearn.neighbors import NearestNeighbors
 from scipy.spatial import distance
 from scipy import signal
+import warnings
 
 
 #TODO this class should be cleaned up
 class Crack:
     # Coordinates of all cracks in raw pixels
     _crack_coordinates_raw = []
-    # Coordinates where some coordinates are removed
-    #_crack_coordinates = [[0.0,0.0]]
     # Current index of cracks_coordinates
     _index = 0
     # Checks whether a crack is finished
@@ -23,14 +22,11 @@ class Crack:
     # number of coordinates
     len = 0
     
-
-
     def __init__(self,crack_cords) -> None:
         self._crack_coordinates = crack_cords
         self._add_state()
         self.len = len(self._crack_coordinates)
         self._crack_in_next_frame = False
-        pass
     
     def __len__(self):
         return len(self._crack_coordinates)
@@ -38,16 +34,18 @@ class Crack:
     def __getitem__(self,index):
         return self._crack_coordinates[index]
 
+    # Mark ends of cracks
     def _add_state(self):
         for idx in range(0,len(self._crack_coordinates)):
             self._crack_coordinates[idx].append(False)
         self._crack_coordinates[0][2] = True
         self._crack_coordinates[-1][2] = True
 
-    
+    #UNUSED
     def set_crack_in_next_frame(self):
         self._crack_in_next_frame = True
 
+    #UNUSED
     def crack_in_next_frame(self):
         return self._crack_in_next_frame
 
@@ -66,13 +64,12 @@ class Crack:
     def get_current_crack(self):
         return self._crack_coordinates[self._index]
 
+
     def repair(self):
         if not (self._crack_coordinates[self._index] == self._crack_coordinates[-1]):
             self._index += 1
-            #print(self._index)
         else:
             self._is_done = True
-            #print("DONE")
         
 
     def get_index(self):
@@ -88,15 +85,12 @@ class Crack:
 
 #TODO this class should be cleaned up
 class Frame():
-    # Final path to take
-    # path = []
     # Pixel on the y-axis where the next frame begins
     next_frame = 480
+    
     KEEP_EVERY_X_PIXEL = 3
     # all cracks done
     cracks_done = False
-    # List of cracks
-    #cracks = [cr]
 
     def __init__(self) -> None:
         self.path = []
@@ -113,10 +107,9 @@ class Frame():
             raise TypeError("Input type must be crack")
         else:       
             # check if crack is in next frame
-            last_crack = crack.get_last_crack()
-            #print(last_crack[1])
-            if ((crack.get_last_crack())[1] > self.next_frame):
-                crack.set_crack_in_next_frame()
+            #last_crack = crack.get_last_crack()
+            #if ((crack.get_last_crack())[1] > self.next_frame):
+            #    crack.set_crack_in_next_frame()
 
             # Add crack to frame
             self.raw_cracks.append(crack)
@@ -323,43 +316,32 @@ def region_array(img, xyFomrat=True):
 def sort_branch(regions):
     crack_cords = []
 
-    # find ends
-
     for region in regions:
         points = region
-       # clf2 = radius_neighbors_graph()
-        #clf = NearestNeighbors(n_neighbors=2,algorithm='auto').fit(points)
+       
         clf = NearestNeighbors(radius=1.5,metric='euclidean').fit(points)
-       # print(clf.radius_neighbors)
-        #print("HEJ")
-        #G = clf.kneighbors_graph()
+       
         P = clf.radius_neighbors_graph() 
-        #print("HEK", G)
         
         T = nx.from_scipy_sparse_matrix(P)
         end_points =[]
         index = []
         for idx, t in enumerate(T):
-            #print(T[idx])
-            #print(idx)
             if len(T[idx]) < 2:
                 end_points.append((points[idx][1]))
                 index.append(idx)
-              #print(points[idx])
-        #print(end_points)
+              
         maxer = max(end_points)
-        #print("hejhej", end_points.index(maxer))
-        start_index = end_points.index(maxer)
-        #print(index[start_index])
-        #print(index[0])
-        #print(index[1])
-        #print(len(T[0]))
-        order = list(nx.dfs_preorder_nodes(T, index[start_index-1]))
-        #print(region)
-        sorted_crack = [list(region[i]) for i in order]
-        #region = region[order]
-        crack_cords.append(sorted_crack)
         
+        start_index = end_points.index(maxer)
+        
+        order = list(nx.dfs_preorder_nodes(T, index[start_index-1]))
+        
+        sorted_crack = [list(region[i]) for i in order]
+        #print('beginning\n')
+        #print(sorted_crack)  
+        crack_cords.append(sorted_crack)
+
     return crack_cords
 
 
@@ -378,50 +360,17 @@ def process_image(img):
     
     # Find regions
     regions,reg2 = region_array(skeleton_branches,True) # 3 ms
-    if(0):
-        y1 = reg2[3][0]
-        x1 = reg2[3][1]
-        
-        plt.plot(x1, 940-y1)
-        y2 = reg2[2][0]
-        x2 = reg2[2][1]
 
-        plt.plot(x2, 940-y2)
-        y3 = reg2[4][0]
-        x3 = reg2[4][1]
-
-        plt.plot(x3, 940-y3)
-        plt.xlim([0, 540])
-        plt.ylim([0, 940])
-
-        plt.show()
-
+    # Sort branches
     sorted_cracks = sort_branch(regions) # 9 ms
-    if(0):
-        y1 = reg2[3][0][sorted_cracks[2]]
-        x1 = reg2[3][1][sorted_cracks[2]]
-        
-        plt.plot(x1, 940-y1)
-        y2 = reg2[2][0][sorted_cracks[1]]
-        x2 = reg2[2][1][sorted_cracks[1]]
-
-        plt.plot(x2, 940-y2)
-        y3 = reg2[4][0][sorted_cracks[3]]
-        x3 = reg2[4][1][sorted_cracks[3]]
-
-        plt.plot(x3, 940-y3)
-        plt.xlim([0, 540])
-        plt.ylim([0, 940])
-
-        plt.show()
 
     return sorted_cracks
 
 
 # Function to calculate the length the robot needs to travel to follow a trajectory
-def calculate_trajectory_length(trajectory, current_pos):
+def calculate_trajectory_length(trajectory: np.array, current_pos: np.array):
     # Turn trajectory from strings to proper format
-    trajectory = np.column_stack([trajectory[:, 0:2].astype(int), np.where(trajectory[:, 2] == 'true', 1, 0)])
+    trajectory = np.column_stack([trajectory[:, 0:2].astype(int), trajectory[:, 2]])
 
     # Calculate distance between all points in trajectory
     dist_between_points = distance.cdist(trajectory[:, 0:2], trajectory[:, 0:2], metric='euclidean').diagonal(1)
