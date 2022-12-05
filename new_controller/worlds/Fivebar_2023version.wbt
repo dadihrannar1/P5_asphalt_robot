@@ -175,7 +175,7 @@ Robot {
             DEF MotorR RotationalMotor {
               name "MotorR"
               maxVelocity 10.5
-              maxTorque 445
+              maxTorque 21
             }
             DEF PosR PositionSensor {
               name "PosR"
@@ -343,7 +343,7 @@ Robot {
             RotationalMotor {
               name "MotorL"
               maxVelocity 10.5
-              maxTorque 445
+              maxTorque 21
             }
             PositionSensor {
               name "PosL"

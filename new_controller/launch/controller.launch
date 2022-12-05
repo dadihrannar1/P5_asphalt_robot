@@ -5,6 +5,6 @@
   <arg name="world" default="$(find new_controller)/worlds/Fivebar_2023version.wbt" doc="Path to world"/>
   <arg name="mode" default="realtime" doc="Startup mode"/>
   <arg name="no_gui" default="false" doc="Start Webots with minimal GUI"/>
-  <node name="webots" pkg="webots_ros" type="webots_launcher.py" args="--world=$(arg world) --mode=$(arg mode) --no-gui=$(arg no_gui)"  required="true"/>
+  <node name="webots_world" pkg="webots_ros" type="webots_launcher.py" args="--world=$(arg world) --mode=$(arg mode) --no-gui=$(arg no_gui)"  required="true"/>
 
 </launch>

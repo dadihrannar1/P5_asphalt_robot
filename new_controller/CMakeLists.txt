@@ -101,8 +101,8 @@ install(TARGETS manipulator
 #catkin_install_python(PROGRAMS scripts/ros_python.py
 #        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})#
 
-catkin_install_python(PROGRAMS scripts/webots_launcher.py
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#catkin_install_python(PROGRAMS scripts/webots_launcher.py
+#        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY launch
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})

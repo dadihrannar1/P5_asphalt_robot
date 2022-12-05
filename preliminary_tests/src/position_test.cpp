@@ -43,22 +43,21 @@ std::vector<int> generateCoord(int amountOfPoints){
 }
 
 
-float invKin(float xPos, float yPos)
+void invKin(float xPos, float yPos)
 {
-  float F0 = sqrt(pow(xPos, 2) + pow(yPos, 2));
-  float F1 = sqrt(pow((L0 - xPos), 2) + pow(yPos, 2));
-  float y00 = acos((pow(L1, 2) + pow(F0, 2) - pow(L2, 2)) / (2 * F0 * L1));
-  float y01 = acos((pow(xPos, 2) + pow(F0, 2) - pow(yPos, 2)) / (2 * F0 * xPos));
-  float y10 = acos((pow(L1, 2) + pow(F1, 2) - pow(L2, 2)) / (2 * F1 * L1));
-  float y11 = acos((pow((L0 - xPos), 2) + pow(F1, 2) - pow(yPos, 2)) / (2 * F1 * (L0 - xPos)));
-  float Theta1 = y00 + y01;
-  float Theta2 = y10 + y11;
+  // for an explenation look in the report
+  float alpha1 = atan2(yPos,xPos);
+  float alpha2 = atan2(yPos,L0-xPos);
+  float D1 = sqrt(pow(xPos,2)+pow(yPos,2));
+  float D2 = sqrt(pow(L0-xPos,2)+pow(yPos,2));
+  float beta1 = acos((pow(L1,2)+pow(D1,2)-pow(L2,2))/(2*L1*D1));
+  float beta2 = acos((pow(L1,2)+pow(D2,2)-pow(L2,2))/(2*L1*D2));
+
+  float Theta1 = alpha1+beta1;
+  float Theta2 = alpha2+beta2;
 
   angl1 = Theta1;
   angl2 = Theta2;
-
-  
-  return 0;
 }
 
 void callback(const geometry_msgs::PointStamped::ConstPtr &value){
