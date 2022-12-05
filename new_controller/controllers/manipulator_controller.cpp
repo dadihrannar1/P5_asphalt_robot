@@ -10,13 +10,6 @@
         4.1: ros::topic /fivebarTrailer/PosL/value
 */ 
 
-// Robot zero positions
-/*
-  MotorR
-        Theta = -p+1.8675
-  MotorL
-        Theta = p-2.33874
-*/
 #include <istream>
 
 #include "ros/ros.h"
@@ -44,10 +37,7 @@
 ros::ServiceClient leftMotorClient;
 ros::ServiceClient rightMotorClient;
 
-// Robot lengths
-int L0 = 176;
-int L1 = 573;
-int L2 = 714;
+
 
 // Global variables for calculatred angles
 float angl1;
@@ -55,8 +45,8 @@ float angl2;
 
 // Function declarations
 void invKin(float xPos, float yPos);
-bool setPos(new_controller::set_pos::Request &msg,new_controller::set_pos::Response &nah);
-bool setMotorPos(new_controller::set_pos::Request &msg,new_controller::set_pos::Response &nah);
+bool setPos(new_controller::set_pos::Request &posmsg,new_controller::set_pos::Response &nt);
+bool setMotorPos(new_controller::set_pos::Request &motormsg,new_controller::set_pos::Response &nah);
 
 class robotController{
   public:
@@ -130,6 +120,10 @@ int main(int argc, char **argv) {
 // Inverse kinematics
 void invKin(float xPos, float yPos)
 {
+  // Robot lengths
+  int L0 = 176;
+  int L1 = 573;
+  int L2 = 714;
   // for an explenation look in the report
   float alpha1 = atan2(yPos,xPos);
   float alpha2 = atan2(yPos,L0-xPos);
@@ -147,29 +141,30 @@ void invKin(float xPos, float yPos)
 
 
 // Function for setting the ee in a desired position
-bool setPos(new_controller::set_pos::Request &msg,
-            new_controller::set_pos::Response &nah){
+bool setPos(new_controller::set_pos::Request &posmsg,
+            new_controller::set_pos::Response &nt){
+  ROS_INFO("x %f y %f" ,posmsg.x, posmsg.y);
   // input
-  float posx = msg.x;
-  float posy = msg.y;
-  new_controller::set_pos posMsg;
+  float posx = posmsg.x;
+  float posy = posmsg.y;
+  new_controller::set_pos tempmsg;
 
   invKin(posx, posy); // get the motor positions
   // package it and send it towards the motors
-  posMsg.request.theta_1 = angl1;
-  posMsg.request.theta_2 = angl2;
-  setMotorPos(posMsg.request,posMsg.response);
-
+  tempmsg.request.theta_1 = angl1;
+  tempmsg.request.theta_2 = angl2;
+  ROS_INFO("theta1 %f theta2 %f" , angl1, angl2);
+  setMotorPos(tempmsg.request,tempmsg.response);
   return true;
 }
 
 // Function for setting the motors in a desired position
-bool setMotorPos(new_controller::set_pos::Request &msg,
+bool setMotorPos(new_controller::set_pos::Request &motormsg,
                  new_controller::set_pos::Response &nah){
   //ROS_INFO("theta1 %f theta2 %f" ,msg.theta_1, msg.theta_2);
 
-  double posL = msg.theta_1-(M_PI-0.3364441);
-  double posR = -msg.theta_2+(M_PI-0.2931572);
+  double posL = motormsg.theta_1-(M_PI-0.3364441);
+  double posR = -motormsg.theta_2+(M_PI-0.2931572);
 
   // incase a position is called that requires the robot to spin wrap it back down to values between [-pi,pi]
   // fx. theta1 = 500 deg, returns 140 degs
@@ -191,8 +186,8 @@ bool setMotorPos(new_controller::set_pos::Request &msg,
   leftMotorSrv.request.value = posL;
   rightMotorSrv.request.value = posR;
   //ROS_INFO("posL %f posR %f", posL, posR);
-  leftMotorClient.call(leftMotorSrv);
-  rightMotorClient.call(rightMotorSrv);
-  
+  bool a = leftMotorClient.call(leftMotorSrv);
+  bool b = rightMotorClient.call(rightMotorSrv);
+  ROS_INFO("succ L: %d, succ R: %d", a, b);
   return true;
   }

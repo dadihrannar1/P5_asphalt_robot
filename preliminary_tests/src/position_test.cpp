@@ -43,23 +43,6 @@ std::vector<int> generateCoord(int amountOfPoints){
 }
 
 
-void invKin(float xPos, float yPos)
-{
-  // for an explenation look in the report
-  float alpha1 = atan2(yPos,xPos);
-  float alpha2 = atan2(yPos,L0-xPos);
-  float D1 = sqrt(pow(xPos,2)+pow(yPos,2));
-  float D2 = sqrt(pow(L0-xPos,2)+pow(yPos,2));
-  float beta1 = acos((pow(L1,2)+pow(D1,2)-pow(L2,2))/(2*L1*D1));
-  float beta2 = acos((pow(L1,2)+pow(D2,2)-pow(L2,2))/(2*L1*D2));
-
-  float Theta1 = alpha1+beta1;
-  float Theta2 = alpha2+beta2;
-
-  angl1 = Theta1;
-  angl2 = Theta2;
-}
-
 void callback(const geometry_msgs::PointStamped::ConstPtr &value){
   //ROS_INFO("x = %f, y = %f, z = %f", value->point.x,value->point.y,value->point.z);
   x = -(value->point.y*1000-L0/2);
@@ -80,7 +63,7 @@ int main(int argc, char **argv)
   timeStepSrv.request.value = TIME_STEP;
   // Enable the GPS in webots
   ros::ServiceClient gpsClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/NozzlePos/enable");
-  ros::ServiceClient motorClient = n.serviceClient<pretests::set_pos>("motorSetPos");
+  ros::ServiceClient manipulatorClient = n.serviceClient<pretests::set_pos>("/manipulatorSetPos");
   gpsClient.call(timeStepSrv);
   //GPS needs to start up
   
@@ -99,9 +82,9 @@ int main(int argc, char **argv)
   float acc_sum[2] = {};
 
   // First call does not work with the GPS so we just send a dummy pos first
-  motorSrv.request.theta_1 = M_PI/2;
-  motorSrv.request.theta_2 = M_PI/2;
-  motorClient.call(motorSrv);
+  motorSrv.request.x = L0/2;
+  motorSrv.request.y = 400;
+  manipulatorClient.call(motorSrv);
   ros::Duration(0.5).sleep();
   ros::spinOnce();
 
@@ -109,12 +92,12 @@ int main(int argc, char **argv)
   int j=0; //since we are looping trough pointers I need a different counter
   for(auto n=w_pos.begin(); n!=w_pos.end();n=n+2){
     // The *(<variable>+value) is to get the next value in a pointer, sorta like an array
-    invKin(*n, *(n+1)); // get the motor positions
-    motorSrv.request.theta_1 = angl1;
-    motorSrv.request.theta_2 = angl2;
-    motorClient.call(motorSrv); // tell the motors to move
+    motorSrv.request.x = float(*n);
+    motorSrv.request.y = float(*(n+1));
+    ROS_INFO("\nwanted pos in x y = %f, %f",float(*n), float(*(n+1)));
+    manipulatorClient.call(motorSrv); // tell the motors to move
     // Wait a little so that the arms can keep up
-    ros::Duration(0.1).sleep();
+    ros::Duration(0.1).sleep(); // Sleep time depends on simulation speed
     ros::spinOnce();
 
     // save the important data for the results file
