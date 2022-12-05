@@ -107,23 +107,27 @@ public:
     point_sub = n.subscribe<geometry_msgs::PointStamped>("points", 1000, &CrackMapper::coordinate_callback, this);
   }
 
-  geometry_msgs::TransformStamped camera_transform_stamped; //Transform from current image to world coordinates
-  geometry_msgs::PointStamped recieved_point;
+  //geometry_msgs::TransformStamped camera_transform_stamped; //Transform from current image to world coordinates
 
   void coordinate_callback(const geometry_msgs::PointStamped::ConstPtr &coordinate){
-    //Add trajectory coordinate to the back of thelist
-    //trajectory_coordinates.push_back(coordinate -> );
+    //Add trajectory coordinate to the back of the list
+    geometry_msgs::PointStamped recieved_point;
+    recieved_point.header = coordinate -> header;
+    recieved_point.point = coordinate -> point;
+    trajectory_coordinates.push_back(recieved_point);
 
-    ROS_INFO("Received point: (%f, %f)", coordinate -> point.x, coordinate -> point.y);
+    ROS_INFO("Received point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+  }
+};
 
-    //Fetch a new transform with the proper time if the current one does not match
+//Fetch a new transform with the proper time if the current one does not match
     /*
     while(recieved_point.header.stamp != camera_transform_stamped.header.stamp){
       try{
         //tfBuffer.waitForTranform();
         //tfListener.waitForTransform();
 
-        camera_transform_stamped = tf2_buffer.lookupTransform("world_frame", "robot_frame", ros::Time(0));
+        camera_transform_stamped = tf2_buffer.lookupTransform("robot_frame", "world_frame", ros::Time(recieved_point.header.stamp.sec, recieved_point.header.stamp.nsec));
         
       }
       catch (tf2::TransformException &ex) {
@@ -137,8 +141,6 @@ public:
     geometry_msgs::PointStamped point;
     tf2_buffer.transform(recieved_point, point, "world_frame");
     */
-  }
-};
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
