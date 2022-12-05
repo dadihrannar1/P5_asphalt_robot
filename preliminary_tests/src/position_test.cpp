@@ -8,7 +8,7 @@
 #include <fstream>
 
 #define TIME_STEP 32
-#define N_TESTS 100
+#define N_TESTS 100 // times we check a coordinate
 
 // Robot lengths
 int L0 = 176;
@@ -62,7 +62,7 @@ float invKin(float xPos, float yPos)
 }
 
 void callback(const geometry_msgs::PointStamped::ConstPtr &value){
-  ROS_INFO("x = %f, y = %f, z = %f", value->point.x,value->point.y,value->point.z);
+  //ROS_INFO("x = %f, y = %f, z = %f", value->point.x,value->point.y,value->point.z);
   x = (value->point.z*1000+L0/2);
   y = -value->point.y*1000;
 }
@@ -137,6 +137,12 @@ int main(int argc, char **argv)
   float* ypointer = std::max_element(y_acc_res, y_acc_res+N_TESTS);
   float x_acc_max = *(xpointer); float y_acc_max = *(ypointer);
   std::ofstream resfile; // .txt file to return results
+
+
+  // This is just for debugging
+  ROS_INFO("Average accuracy:   x=%f, y=%f",x_acc_avg, y_acc_avg);
+  ROS_INFO("Highest deviations: x=%f, y=%f",x_acc_max, y_acc_max);
+
   // the results file can be found in your catkin workspace
   resfile.open("accuracy_test.txt"); // This will overwrite old data
   if (resfile.is_open()){
