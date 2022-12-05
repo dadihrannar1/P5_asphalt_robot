@@ -7,7 +7,7 @@
   <include file="$(find new_controller)/launch/controller.launch">
     <arg name="mode" value="realtime"/>
     <arg name="no_gui" value="$(arg no_gui)"/>
-    <arg name="world" value="$(find new_controller)/worlds/Fivebar_2022version_new.wbt"/>
+    <arg name="world" value="$(find new_controller)/worlds/Fivebar_2023version.wbt"/>
   </include>
 
   <arg name="auto_close" default="false" doc="Startup mode"/>

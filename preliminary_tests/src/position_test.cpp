@@ -63,8 +63,8 @@ float invKin(float xPos, float yPos)
 
 void callback(const geometry_msgs::PointStamped::ConstPtr &value){
   //ROS_INFO("x = %f, y = %f, z = %f", value->point.x,value->point.y,value->point.z);
-  x = (value->point.z*1000+L0/2);
-  y = -value->point.y*1000;
+  x = -(value->point.y*1000-L0/2);
+  y = value->point.x*1000;
 }
 
 int main(int argc, char **argv)
@@ -95,9 +95,9 @@ int main(int argc, char **argv)
   w_pos.resize(N_TESTS);
   w_pos = generateCoord(N_TESTS); // generate positions
 
-  float x_acc_res[N_TESTS];
-  float y_acc_res[N_TESTS];
-  float acc_sum[2];
+  float x_acc_res[N_TESTS] = {}; // legit remember the {} or we might get leftover memory
+  float y_acc_res[N_TESTS] = {};
+  float acc_sum[2] = {};
 
   // First call does not work with the GPS so we just send a dummy pos first
   motorSrv.request.theta_1 = M_PI/2;
