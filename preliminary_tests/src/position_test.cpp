@@ -153,7 +153,7 @@ int main(int argc, char **argv)
     resfile << "Highest deviations: x=" << x_acc_max << " y=" << y_acc_max << " magnitude="<<mag_acc_max << std::endl;
     resfile << "---------FULL RESULTS--------" << std::endl;
     for(int i =0; i<=N_TESTS;++i){
-      resfile << "x:" << x_acc_res[i] << " y:" << y_acc_res[i] << " mag:" << mag_acc_res[i] << std::endl;
+      resfile << "x,y,mag:" << x_acc_res[i] << ":" << y_acc_res[i] << ":" << mag_acc_res[i] << std::endl;
     }
   }
   resfile.close();
