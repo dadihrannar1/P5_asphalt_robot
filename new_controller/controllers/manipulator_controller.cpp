@@ -105,6 +105,15 @@ int main(int argc, char **argv) {
   ros::Publisher encoderPub = n.advertise<new_controller::motor_pos>("encoderData", 10);
   // message for the encoder
   new_controller::motor_pos encoderMsg;
+
+  // Set available torque for the motors
+    // In this test we only care about if positions can be reached, so we increase the motor output to faster rach desired points
+  ros::ServiceClient torqueLClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorL/set_available_torque");
+  ros::ServiceClient torqueRClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorR/set_available_torque");
+  webots_ros::set_float torqueMsg;
+  torqueMsg.request.value = 21;
+  torqueLClient.call(torqueMsg);
+  torqueRClient.call(torqueMsg);
   
   // main loop
     while (ros::ok()) {
@@ -161,7 +170,7 @@ bool setPos(new_controller::set_pos::Request &posmsg,
 // Function for setting the motors in a desired position
 bool setMotorPos(new_controller::set_pos::Request &motormsg,
                  new_controller::set_pos::Response &nah){
-  //ROS_INFO("theta1 %f theta2 %f" ,msg.theta_1, msg.theta_2);
+  ROS_INFO("theta1 %f theta2 %f" ,motormsg.theta_1, motormsg.theta_2);
 
   double posL = motormsg.theta_1-(M_PI-0.3364441);
   double posR = -motormsg.theta_2+(M_PI-0.2931572);
