@@ -1,4 +1,4 @@
-#VRML_SIM R2023a utf8
+#VRML_SIM R2022b utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/floors/protos/RectangleArena.proto"
 
@@ -6,7 +6,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 0.4160051100444014 0.7012321248247954 0.5789760405497348 2.1295568749360116
-  position 3.02709857800531 -8.236795206096282 1.9130910722880676
+  position 1.2542401006750883 -3.636718528695617 0.5204020379306152
 }
 RectangleArena {
   rotation -6.123233995736766e-17 1 0 1.5707963267948966
@@ -179,6 +179,7 @@ Robot {
             }
           ]
           endPoint DEF MotorR_arm Solid {
+            translation -3.469446951953614e-18 0 1.3877787807814457e-17
             rotation 0 1 0 0
             children [
               DEF RightJoint HingeJoint {
@@ -187,7 +188,7 @@ Robot {
                   anchor 0.57543 -0.2599 0.27232
                 }
                 endPoint DEF EndRight Solid {
-                  translation 5.551115123125783e-16 -4.440892098500626e-16 2.7755575615628914e-16
+                  translation 8.881784197001252e-16 -5.551115123125783e-16 4.440892098500626e-16
                   rotation 0 1 0 0
                   children [
                     HingeJoint {
@@ -197,8 +198,13 @@ Robot {
                         staticFriction 200000
                       }
                       endPoint Solid {
+                        translation -1.1102230246251565e-16 1.1102230246251565e-16 5.551115123125783e-17
                         rotation 0 1 0 0
                         children [
+                          GPS {
+                            translation 0.93716 0.26091 -0.2001
+                            name "NozzlePos"
+                          }
                           DEF Nozzle Transform {
                             translation 0 0.403 0
                             children [
