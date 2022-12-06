@@ -4,6 +4,10 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
 
+const double WHEEL_DIAMETER = 0.38*M_PI;    //Wheel diameter
+const double ENCODER_TICKS = 100;           //Ticks per encoder revolution
+const double LENGTH_BETWEEN_WHEELS = 1.466; //Axle length in meters
+
 //Class to handle changes in world coordinates by reading wheel encoders
 class DiffDrive{
 private:
@@ -114,7 +118,7 @@ int main(int argc, char** argv){
     tf2_ros::TransformBroadcaster odom_broadcaster;
 
     //Create differential drive handler
-    DiffDrive ddr_position(1/(2*M_PI), 2048, 1);
+    DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
 
     ros::Time current_time, last_time;
     current_time = ros::Time::now();
