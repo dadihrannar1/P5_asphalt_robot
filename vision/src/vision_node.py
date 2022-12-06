@@ -22,6 +22,8 @@ from trajectory_planning import Crack, Frame, map_cracks, process_image
 import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
 import atexit
+import pickle
+import glob
 
 
 # Camera source (0 for webcam)
@@ -98,32 +100,38 @@ def frames_from_camerastream(data_out, lock, event):
 
 
 def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
-    path_string = current_path + '/test_images/realistic_split_'
-    print('starting image load from: ' + path_string + '#.png')
+    with open(current_path + '/calib_matrix.pkl', 'rb') as file:
+        map_x = pickle.load(file)
+        map_y = pickle.load(file)
 
-    #start loading videos
-    i = 0
+    image_path = current_path + '/images/*.png'
+    images = sorted(glob.glob(image_path))
     print('Thread 1 started (frames_from_files)')
-    while True:
-        if exists(path_string + str(i) + '.png'):
-            frame_time = time.time_ns()
-            frame = cv2.imread(path_string + str(i) + '.png')
-            i = i + 1
+    for filename in images:
+        frame_time = time.time_ns()
+        frame = cv2.imread(filename)
 
-            event_transmit_ready.wait()
-            event_transmit_ready.clear()
+        # Undistort image, followed by rotation and cropping
+        frame_corrected = cv2.remap(frame, map_x, map_y, cv2.INTER_LINEAR)
+        frame_rotated = cv2.rotate(frame_corrected, cv2.ROTATE_90_CLOCKWISE)
+        frame_cropped = frame_rotated[100:1720, 100:980]  # Crop image to remove trailer edges
+        #visualize = cv2.resize(frame_cropped, [320, 480])
+        #cv2.imshow('corrected', visualize)
+        #cv2.waitKey(0)
 
-            lock.acquire()
-            data_out.set_data(frame)
-            data_out.set_frame_time(frame_time)
-            lock.release()
+        # Wait for next thread to be ready to recieve
+        event_transmit_ready.wait()
+        event_transmit_ready.clear()
 
-            event_transmit.set()
-            #print('Thread 1 sent data')
-            
-            time.sleep(5) #wait 5 seconds until noading next image
-        else:
-            exit('no more files to load')
+        # Send frame and time recorded
+        lock.acquire()
+        data_out.set_data(frame_cropped)
+        data_out.set_frame_time(frame_time)
+        lock.release()
+
+        # Notify next frame of available data
+        event_transmit.set()
+        #print('Thread 1 sent data')
 
 
 ##Function to run model from specifed path
