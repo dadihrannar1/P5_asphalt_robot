@@ -7,8 +7,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.2524713683374666 0.013609328311194853 0.967508653373563 3.106833054900057
-  position 3.091532611794761 -0.13357302219047174 1.9250331406494128
+  orientation -0.38670442379872383 0.44166428147743536 0.8095630618312064 1.6490874190139622
+  position -0.9499498374556984 -6.672264032215567 7.750526423794468
 }
 TexturedBackground {
   luminosity 0.5
@@ -17,11 +17,33 @@ TexturedBackgroundLight {
   luminosity 0.5
 }
 RectangleArena {
+  translation 0 0 -0.01
   floorSize 10 5
 }
 Robot {
   rotation 1 0 0 1.5708
   children [
+    DEF CrackDisplay Display {
+      translation 0.0200023 0 -0.33
+      rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094399693899575
+      scale 2.31497 2.31497 2.31497
+      children [
+        Shape {
+          appearance Appearance {
+            material Material {
+            }
+            texture ImageTexture {
+              url [
+                "../Long Crack for testing/saved_image_1293.png"
+              ]
+            }
+          }
+          geometry Plane {
+          }
+        }
+      ]
+      name "CrackDisplay"
+    }
     DEF Trailer Solid {
       translation 0 5.55112e-17 -5.4794e-05
       children [
@@ -191,18 +213,18 @@ Robot {
                   anchor 0.165583 -0.2599 0.636554
                 }
                 endPoint DEF EndRight Solid {
-                  translation -2.55351295663786e-15 -1.3322676295501878e-15 -4.440892098500626e-16
+                  translation -2.581268532253489e-15 -1.3322676295501878e-15 -5.551115123125783e-16
                   rotation 0 1 0 0
                   children [
                     HingeJoint {
                       jointParameters HingeJointParameters {
                         axis 0 1 0
                         anchor 0.507968 -0.27591 0.0100006
-                        staticFriction 200000
+                        staticFriction 5000000
                       }
                       endPoint Solid {
-                        translation 2.220446049250313e-15 -3.774758283725532e-15 0
-                        rotation 0 1 0 0
+                        translation 0.0011388456791989743 0.00019251385590979275 -0.02297498328899042
+                        rotation -0.0007844851155743449 -0.9999992448101394 -0.0009460244470146116 0.04499410052415884
                         children [
                           GPS {
                             translation 0.507968 0.27591 0.0100006
@@ -246,7 +268,7 @@ Robot {
                         boundingObject USE Nozzle
                         physics Physics {
                           density -1
-                          mass 2
+                          mass 0.1
                         }
                       }
                     }
@@ -458,8 +480,6 @@ Robot {
       ]
       name "manipulator"
       boundingObject USE Trailer
-      physics Physics {
-      }
     }
   ]
   name "fivebarTrailer"
