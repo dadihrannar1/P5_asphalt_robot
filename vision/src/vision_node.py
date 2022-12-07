@@ -334,11 +334,21 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size = 10)
         transform_pub = rospy.Publisher('vo', nav_msgs.Odometry, queue_size = 50)
 
-        # Transform listener for getting the ekf transform /vo_camera_frame -> /world_frame
+        r = rospy.Rate(100) #100hz
+
+        # Transform listener for getting transforms from TF
         tf_buffer = tf2_ros.Buffer()#rospy.Time(100))
         tf_listener = tf2_ros.TransformListener(tf_buffer)
 
-        r = rospy.Rate(100) #100hz
+        # Transform from camera to base (must be the inverse of base_to_camera_transform)
+        transform_camera_to_base = geo_msgs.Transform()
+        transform_camera_to_base.translation.x = -0.067 
+        transform_camera_to_base.translation.y = 0.42665
+        transform_camera_to_base.translation.z = 0
+        transform_camera_to_base.rotation.x = 0
+        transform_camera_to_base.rotation.y = 0
+        transform_camera_to_base.rotation.z = 0
+        transform_camera_to_base.rotation.w = 1
 
         world_pose_x = 0
         world_pose_y = 0
@@ -376,9 +386,13 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
             secs = int((local_frame_time - nsecs)/1000000000)
 
             # Calculate world pose
-            world_pose_x += traveled_x
-            world_pose_y += traveled_y
+            world_pose_x += traveled_x * PIXEL_SIZE
+            world_pose_y += traveled_y * PIXEL_SIZE
             world_orientation = angle_add(world_orientation, angle)
+
+            # Transform everything from camera frame to base frame
+            traveled_x_base, traveled_y_base = transform_coordinates(traveled_x, traveled_y, transform_camera_to_base)
+            world_pose_x_base, world_pose_y_base = transform_coordinates(world_pose_x, world_pose_y, transform_camera_to_base)
 
             # Publish transform from camera
             tf_msg = nav_msgs.Odometry()
@@ -388,8 +402,8 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
             tf_msg.child_frame_id = "vo"
 
             # Add twist
-            tf_msg.twist.twist.linear.x = traveled_x * PIXEL_SIZE
-            tf_msg.twist.twist.linear.y = traveled_y * PIXEL_SIZE
+            tf_msg.twist.twist.linear.x = traveled_x_base 
+            tf_msg.twist.twist.linear.y = traveled_y_base 
             tf_msg.twist.twist.linear.z = 0.0
             tf_msg.twist.twist.angular.x = 0.0
             tf_msg.twist.twist.angular.y = 0.0
@@ -397,8 +411,8 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
             tf_msg.twist.covariance = STANDARD_COVARIANCE
 
             # Add pose
-            tf_msg.pose.pose.position.x = world_pose_x * PIXEL_SIZE
-            tf_msg.pose.pose.position.y = world_pose_y * PIXEL_SIZE
+            tf_msg.pose.pose.position.x = world_pose_x_base
+            tf_msg.pose.pose.position.y = world_pose_y_base
             tf_msg.pose.pose.position.z = 0.0
             quat = tf_convert.quaternion_from_euler(0, 0, world_orientation)
             tf_msg.pose.pose.orientation.x = quat[0]
@@ -411,7 +425,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
 
             # Get transform from camera to world for current image
             try:
-                transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'vo_camera_frame', rospy.Time(secs, nsecs))
+                transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time(secs, nsecs))
             
                 # Send each point in crack trajectory
                 for path in local_data.path:
