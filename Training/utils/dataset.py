@@ -19,7 +19,7 @@ class CrackDataset(Dataset):
         mask_path = "%s/%s" % (self.mask_dir, self.masks[index])
         image = np.array(Image.open(img_path).convert("RGB"))
         mask = np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
-        mask[mask == 255.0] = 1.0
+        mask[mask > 0] = 1.0
 
         if self.transform is not None:
             augmentations = self.transform(image=image, mask=mask)

@@ -4,7 +4,7 @@ from utils.dataset import CrackDataset
 from torch.utils.data import DataLoader
 from utils.model import UNET
 
-def save_checkpoint(state, filename="Abdul.pth.tar"):
+def save_checkpoint(state, filename="TrainingModel.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
 
