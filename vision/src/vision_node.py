@@ -179,8 +179,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transm
             new_image = cv2.resize(local_image,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
             new_image = cv2.cvtColor(new_image,cv2.COLOR_BGR2GRAY)
 
-            transform = image_aligner.image_aligner_cpu(img_raw_old, new_image)
-            angle, traveled_x, traveled_y = image_aligner.affine_to_angle_trans(transform)
+            angle, traveled_x, traveled_y = image_aligner.image_aligner_cpu(img_raw_old, new_image)
 
         augmentented = detect_transform(image=local_image)
         data = augmentented["image"].to(device=DEVICE)
@@ -242,7 +241,7 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_transmit, event_tr
 
         # If not first frame, ensure all cracks which have already been marked for repair are not marked again
         if not old_frame == 0:
-            map_cracks(old_frame, frame1, traveled_y)
+            map_cracks(old_frame, frame1, int(traveled_y))
         
         frame1.find_path()
        
@@ -337,7 +336,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         r = rospy.Rate(100) #100hz
 
         # Transform listener for getting transforms from TF
-        tf_buffer = tf2_ros.Buffer()#rospy.Time(100))
+        tf_buffer = tf2_ros.Buffer(rospy.Time(100))
         tf_listener = tf2_ros.TransformListener(tf_buffer)
 
         # Transform from camera to base (must be the inverse of base_to_camera_transform)
@@ -355,7 +354,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         world_orientation = 0
 
         # Scalar from pixels to distances in camera frame
-        PIXEL_SIZE = 1.6/WIDTH #In meters
+        PIXEL_SIZE = 0.0009712 #In meters
         STANDARD_COVARIANCE = [0.05, 0.006, 0.01, 0.01, 0.01, 0.000009,
                             0.006, 0.05, 0.01, 0.01, 0.01, 0.01,
                             0.01, 0.01, 0.05, 0.01, 0.01, 0.01,

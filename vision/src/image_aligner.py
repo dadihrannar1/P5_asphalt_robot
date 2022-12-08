@@ -29,12 +29,24 @@ def image_aligner_cpu(img1, img2, max_features=5000, min_match_count=10, keep_be
 
         # Generate 2x3 transformation matrix containing rotational and translational components [R_2x2|T_2x1]
         transformation, _ = cv2.estimateAffinePartial2D(dst_pts, src_pts)
-        return transformation
+
+        # X and Y translations
+        x_dist = transformation[0, 2]
+        y_dist = transformation[1, 2]
+
+        # Remove scaling factor from rotation matrix
+        angle = math.acos(transformation[0, 0]/math.sqrt(math.pow(transformation[0, 0],2) + math.pow(transformation[0, 1],2)))
+
+        # If angle change is above 180 degrees take it as negative angle instead
+        if angle > math.pi:
+            angle = angle - 2*math.pi
+        return angle, x_dist, y_dist
     else:
         print("Not enough matches are found - %d/%d", (len(good) / min_match_count))
-
-        transformation = np.column_stack([np.identity(2), np.zeros((1, 2))])
-        return transformation
+        angle = 0
+        x_dist = 0
+        y_dist = 0
+        return angle, x_dist, y_dist
 
 
 # Turn affine transform into angle and 
