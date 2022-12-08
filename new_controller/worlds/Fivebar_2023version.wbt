@@ -8,7 +8,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 0.5362167788598338 -0.015450800888508075 -0.8439388833446934 3.1902131163722585
-  position -0.4112806306026451 0.05884677975076986 6.508205639985269
+  position -0.1347050229222156 0.04289767329916919 7.098582733688028
 }
 TexturedBackground {
   luminosity 0.5
@@ -23,160 +23,910 @@ RectangleArena {
 Robot {
   rotation 1 0 0 1.5708
   children [
-    SliderJoint {
-      jointParameters JointParameters {
-        axis 1 0 0
-      }
-      device [
-        LinearMotor {
-          name "Display_motor4"
-          maxForce 10000
-        }
-      ]
-      endPoint Solid {
-        children [
-          DEF CrackDisplay4 Display {
-            translation -6.4 -0.0001 0
-            rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+    DEF Displays Solid {
+      children [
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor25"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
             children [
-              Shape {
-                appearance Appearance {
-                  material Material {
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
                   }
-                  texture ImageTexture {
-                    url [
-                      "../../../../../long_crack_jpg/saved_image_1295.jpg"
-                    ]
-                  }
-                }
-                geometry Plane {
-                  size 1.6 1.2
-                }
+                ]
+                name "CrackDisplay25"
+                width 1920
+                height 1080
               }
             ]
-            name "CrackDisplay4"
-            width 1920
-            height 1080
+            name "slider(1)"
           }
-        ]
-        name "solid(3)"
-      }
-    }
-    SliderJoint {
-      jointParameters JointParameters {
-        axis 1 0 0
-      }
-      device [
-        LinearMotor {
-          name "Display_motor3"
-          maxForce 10000
         }
-      ]
-      endPoint Solid {
-        children [
-          DEF CrackDisplay3 Display {
-            translation -4.8 -0.0001 0
-            rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor24"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
             children [
-              Shape {
-                appearance Appearance {
-                  material Material {
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
                   }
-                  texture ImageTexture {
-                    url [
-                      "../../../../../long_crack_jpg/saved_image_1294.jpg"
-                    ]
-                  }
-                }
-                geometry Plane {
-                  size 1.6 1.2
-                }
+                ]
+                name "CrackDisplay24"
+                width 1920
+                height 1080
               }
             ]
-            name "CrackDisplay3"
-            width 1920
-            height 1080
+            name "slider(2)"
           }
-        ]
-        name "solid(2)"
-      }
-    }
-    SliderJoint {
-      jointParameters JointParameters {
-        axis 1 0 0
-      }
-      device [
-        LinearMotor {
-          name "Display_motor2"
-          maxForce 10000
         }
-      ]
-      endPoint Solid {
-        children [
-          DEF CrackDisplay2 Display {
-            translation -3.2 -0.0001 0
-            rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor23"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
             children [
-              Shape {
-                appearance Appearance {
-                  material Material {
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
                   }
-                  texture ImageTexture {
-                    url [
-                      "../Long_Crack_for_testing/time_to_jpg/saved_image_1293.png"
-                    ]
-                  }
-                }
-                geometry Plane {
-                  size 1.6 1.2
-                }
+                ]
+                name "CrackDisplay23"
+                width 1920
+                height 1080
               }
             ]
-            name "CrackDisplay2"
-            width 1920
-            height 1080
+            name "slider(3)"
           }
-        ]
-        name "solid(1)"
-      }
-    }
-    SliderJoint {
-      jointParameters JointParameters {
-        axis 1 0 0
-      }
-      device [
-        LinearMotor {
-          name "Display_motor1"
-          maxForce 10000
         }
-      ]
-      endPoint Solid {
-        children [
-          DEF CrackDisplay1 Display {
-            translation -1.6 -0.0001 0
-            rotation -5.085758426212298e-09 0.707107781185531 0.70710578118615 3.14159
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor22"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
             children [
-              Shape {
-                appearance Appearance {
-                  material Material {
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
                   }
-                  texture ImageTexture {
-                    url [
-                      "../../../../../long_crack_jpg/saved_image_1292.jpg"
-                    ]
-                  }
-                }
-                geometry Plane {
-                  size 1.6 1.2
-                }
+                ]
+                name "CrackDisplay22"
+                width 1920
+                height 1080
               }
             ]
-            name "CrackDisplay1"
-            width 1920
-            height 1080
+            name "slider(4)"
           }
-        ]
-      }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor21"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay21"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(5)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor20"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay20"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(6)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor19"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay19"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(7)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor18"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay18"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(8)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor17"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay17"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(9)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor16"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay16"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(10)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor15"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay15"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(11)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor14"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay14"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(12)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor13"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay13"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(13)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor12"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay12"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(14)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor11"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay11"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(15)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor10"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay10"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(16)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor9"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay9"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(17)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor8"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay8"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(18)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor7"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay7"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(19)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor6"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay6"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(20)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor5"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay5"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(21)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor4"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay4"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(22)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor3"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay3"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(23)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor2"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay2"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider(24)"
+          }
+        }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
+          }
+          device [
+            LinearMotor {
+              name "Display_motor1"
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                      }
+                    }
+                    geometry Plane {
+                      size 1.6 1.2
+                    }
+                  }
+                ]
+                name "CrackDisplay1"
+                width 1920
+                height 1080
+              }
+            ]
+            name "slider"
+          }
+        }
+      ]
+      name "solid(4)"
     }
     DEF Trailer Solid {
       translation 0 5.55112e-17 -5.4794e-05
