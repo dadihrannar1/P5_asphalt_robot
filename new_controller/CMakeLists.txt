@@ -73,12 +73,16 @@ ${WEBOTS_INCLUDE}
 
 ## Instructions for keyboard_teleop node
 
-#add_executable(manipulator controllers/basic_moveRead_test.cpp)
+add_executable(offset controllers/load_image_withoffset.cpp)
 add_executable(manipulator controllers/manipulator_controller.cpp)
 
 add_dependencies(manipulator new_controller_generate_messages_cpp)
+add_dependencies(offset new_controller_generate_messages_cpp)
 
 target_link_libraries(manipulator
+	${catkin_LIBRARIES} ${LIBRARIES}
+)
+target_link_libraries(offset
 	${catkin_LIBRARIES} ${LIBRARIES}
 )
 
@@ -91,6 +95,9 @@ target_link_libraries(manipulator
 
 install(TARGETS manipulator
        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(TARGETS offset
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #install(TARGETS new_controller
 #        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
