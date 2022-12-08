@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs messag
   add_service_files(
     FILES
     set_pos.srv
+    display_movement.srv
   )
 
 ## Generate added messages and services with any dependencies listed here
@@ -82,6 +83,13 @@ target_link_libraries(manipulator
 	${catkin_LIBRARIES} ${LIBRARIES}
 )
 
+add_executable(display_test controllers/crack_movement.cpp)
+
+add_dependencies(display_test new_controller_generate_messages_cpp)
+
+target_link_libraries(display_test
+	${catkin_LIBRARIES} ${LIBRARIES}
+)
 
 
 
@@ -89,7 +97,7 @@ target_link_libraries(manipulator
 ## Install ##
 #############
 
-install(TARGETS manipulator
+install(TARGETS display_test
        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #install(TARGETS new_controller
