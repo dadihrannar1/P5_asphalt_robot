@@ -131,7 +131,7 @@ def save_predictions_as_imgs(
         torchvision.utils.save_image(
             preds, f"{folder}/pred_{idx}.png"
         )
-        torchvision.utils.save_image(y.unsqueeze(1), f"{folder}{idx}.png")
+        torchvision.utils.save_image(y.unsqueeze(1), f"{folder}/{idx}.png")
         torchvision.utils.save_image(x, f"{folder}/original_{idx}.png")
 
     model.train()
@@ -140,8 +140,8 @@ def save_predictions_as_imgs(
 
 def load_model(model_name, features=[64,128,256,512]):
     model = UNET(in_channels=3, out_channels=1, features=features)
-    checkpoint = torch.load(model_name)
-    model.load_state_dict(checkpoint['state_dict'])
+    chk = torch.load(model_name)
+    model.load_state_dict(chk['state_dict'], strict=False)
     model.eval()
     model.cuda()
 

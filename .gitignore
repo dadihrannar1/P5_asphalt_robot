@@ -5,7 +5,7 @@
 __pycache__/
 
 # Ignore trained model files
-*.pth.tar
+
 
 # Ignore images
 *.png
@@ -13,4 +13,5 @@ __pycache__/
 
 #ignore videos
 *.MP4
-Image_aquisistion/image_details.json
+#ignore
+*.json
