@@ -26,3 +26,6 @@ Image_aquisistion/image_details.json
 #ignore videos
 *.MP4
 Image_aquisistion/image_details.json
+
+#Ignoring pycharm
+**/.idea/

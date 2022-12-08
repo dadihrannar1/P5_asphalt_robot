@@ -55,9 +55,9 @@ public:
         //Calculate position change in local frame
         double local_delta_trans = wh_radius/2 * (delta_l_angle + delta_r_angle);
 
-        //Calculate translation in global X Y (-Y is forward direction)
-        delta_x_trans = local_delta_trans * sin(world_z_rot);
-        delta_y_trans = -local_delta_trans * cos(world_z_rot);
+        //Calculate translation in global X Y
+        delta_x_trans = local_delta_trans * cos(world_z_rot);
+        delta_y_trans = local_delta_trans * sin(world_z_rot);
 
         //Calculate angular change around Z
         delta_z_rot = wh_radius/axle_length * (delta_l_angle - delta_r_angle);

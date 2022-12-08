@@ -347,18 +347,18 @@ Robot {
                   anchor 0.165583 -0.2599 0.636554
                 }
                 endPoint DEF EndRight Solid {
-                  translation -2.55351295663786e-15 -1.3322676295501878e-15 -4.440892098500626e-16
+                  translation -2.581268532253489e-15 -1.3322676295501878e-15 -5.551115123125783e-16
                   rotation 0 1 0 0
                   children [
                     HingeJoint {
                       jointParameters HingeJointParameters {
                         axis 0 1 0
                         anchor 0.507968 -0.27591 0.0100006
-                        staticFriction 200000
+                        staticFriction 5000000
                       }
                       endPoint Solid {
-                        translation 2.220446049250313e-15 -3.774758283725532e-15 0
-                        rotation 0 1 0 0
+                        translation 0.0011388456791989743 0.00019251385590979275 -0.02297498328899042
+                        rotation -0.0007844851155743449 -0.9999992448101394 -0.0009460244470146116 0.04499410052415884
                         children [
                           GPS {
                             translation 0.507968 0.27591 0.0100006
@@ -402,7 +402,7 @@ Robot {
                         boundingObject USE Nozzle
                         physics Physics {
                           density -1
-                          mass 2
+                          mass 0.1
                         }
                       }
                     }
@@ -614,8 +614,6 @@ Robot {
       ]
       name "manipulator"
       boundingObject USE Trailer
-      physics Physics {
-      }
     }
   ]
   name "fivebarTrailer"

@@ -20,7 +20,7 @@ def image_aligner_cpu(img1, img2, max_features=5000, min_match_count=10, keep_be
     #                    flags=2)
     # img3 = cv2.drawMatches(img1, kp1, img2, kp2, matches[:50], None, **draw_params)
     # cv2.imshow("original_image_drawMatches.jpg", img3)
-    # cv2.waitKey(1)
+    # cv2.waitKey(0)
 
     good = matches[:int(len(matches)*keep_best_ratio)]
     if len(good) > min_match_count:
@@ -28,7 +28,7 @@ def image_aligner_cpu(img1, img2, max_features=5000, min_match_count=10, keep_be
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
         # Generate 2x3 transformation matrix containing rotational and translational components [R_2x2|T_2x1]
-        transformation, _ = cv2.estimateAffinePartial2D(src_pts, dst_pts)
+        transformation, _ = cv2.estimateAffinePartial2D(dst_pts, src_pts)
         return transformation
     else:
         print("Not enough matches are found - %d/%d", (len(good) / min_match_count))

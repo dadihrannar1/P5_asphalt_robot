@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- set roscontroller -->
+
+  <!-- start Webots -->
+  <arg name="no_gui" default="false," doc="Start Webots with minimal GUI"/>
+  <include file="$(find new_controller)/launch/controller.launch">
+    <arg name="mode" value="realtime"/>
+    <arg name="no_gui" value="$(arg no_gui)"/>
+    <arg name="world" value="$(find new_controller)/worlds/Fivebar_2023version.wbt"/>
+  </include>
+</launch>
