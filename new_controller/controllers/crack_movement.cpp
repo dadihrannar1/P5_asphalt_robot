@@ -1,9 +1,5 @@
 #include <iostream>
 #include <fstream>
-
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <jsoncpp/json/json.h>
 #include <new_controller/display_movement.h>
 
 
@@ -82,36 +78,6 @@ int main(int argc, char **argv) {
   ros::NodeHandle n;
   
   ros::Subscriber name_sub = n.subscribe("fivebarTraile", 100, modelNameCallback);
-
-
-
-std::ifstream file("image_details.json");
-// json reader
-Json::Reader reader;
-// this will contain complete JSON data
-Json::Value completeJsonData;
-// reader reads the data and stores it in completeJsonData
-reader.parse(file, completeJsonData);
-// complete JSON data
-std::cout << "Complete JSON data: " << std::endl << "completeJsGrad" << std::endl;
-
-
-  std::fstream fin;
-  std::string filename = std::string(getenv("HOME")) + "/p5_ws/src/P5_asphalt_robot/new_controller/json/image_details.json";
-  // Open an existing file
-  std::cout << "Loading file: " << filename << std::endl;
-  fin.open(filename, std::ios::in);
-  if (!fin.is_open())
-  {
-      std::cout << "File: " << filename << " not opened. Check filename" << std::endl;
-      system("pause");
-      exit(1);
-  }
-
- 
-  
-
-
 
 
 
