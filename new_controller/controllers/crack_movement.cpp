@@ -24,6 +24,8 @@
 #include <signal.h>
 #include <std_msgs/String.h>
 #include <cmath>
+#include <vector>
+#include <cstring> 
 
 
 #define TIME_STEP 32 
@@ -33,8 +35,52 @@
 
 ros::ServiceClient pos_motor_client[NUM_DISPLAYS]; 
 ros::ServiceClient vel_motor_client[NUM_DISPLAYS];
+std::vector<std::string> filenames_crack;
+std::vector<int> time_IRL;
+std::vector<int> encoder1;
+std::vector<int> encoder2;
 
 
+void jsonFileReader(std::string path){
+  std::fstream jsonfile;
+   jsonfile.open(path,std::ios::in); //open a file to perform read operation using file object
+   if (jsonfile.is_open()){ //checking whether the file is open
+      // define variables
+      std::string tp;
+
+      int j = 0;
+      while(getline(jsonfile, tp, '"')){ //read data from file object and put it into string.
+        if(tp == ", "){continue;} // if it's a ", " go next
+        if(tp == "], ["){ // New file type
+            j++;
+            continue;
+            }
+        if(tp == "]]"){continue;} // End of document
+
+        switch(j){
+            case 0:
+            filenames_crack.push_back(tp);
+            break;
+            case 1:
+            time_IRL.push_back(std::stoi(tp));
+            break;
+            case 2:
+            encoder1.push_back(std::stoi(tp));
+            break;
+            case 3:
+            encoder2.push_back(std::stoi(tp));
+            break;
+        }
+      }
+      jsonfile.close(); //close the file object.
+      ROS_INFO("files");
+      ROS_INFO_STREAM(j);
+   }
+
+   
+
+
+}
 
 
 static int model_count;
@@ -79,8 +125,11 @@ int main(int argc, char **argv) {
   
   ros::Subscriber name_sub = n.subscribe("fivebarTraile", 100, modelNameCallback);
 
+  jsonFileReader("image_details");
 
 
+
+  ROS_INFO(filenames_crack.begin());
 
   webots_ros::display_get_info display_get_info_srv;
   
@@ -117,7 +166,7 @@ while (ros::ok())
 
 
   std::string image_path = "/long_crack_jpg/saved_image_"+std::to_string(j)+".jpg";
-  ROS_INFO_STREAM(image_path);
+  //ROS_INFO_STREAM(image_path);
   display_image_load_client = n.serviceClient<webots_ros::display_image_load>(model_name + "/CrackDisplay" + std::to_string(i) +"/image_load");
 
   display_image_load_srv.request.filename = (std::string(getenv("HOME")) + image_path);
