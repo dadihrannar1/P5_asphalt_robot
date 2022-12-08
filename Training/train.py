@@ -20,19 +20,19 @@ from utils.utils import (
 #writer = SummaryWriter('runs/fashion_mnist_experiment_1')
 
 # Hyperparameters etc.
-LEARNING_RATE = 1e-4 # original 1e-4
+LEARNING_RATE = 1e-4     # original 1e-4
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 16
-NUM_EPOCHS = 1
+BATCH_SIZE = 1
+NUM_EPOCHS = 90
 NUM_WORKERS = 4
-IMAGE_HEIGHT = 320#160*2 1280 originally
-IMAGE_WIDTH = 480#240*2  1918 originally
+IMAGE_HEIGHT = int(1920)#160*2 1280 originally
+IMAGE_WIDTH = int(1080)#240*2  1918 originally
 PIN_MEMORY = True
 LOAD_MODEL = False
 TRAIN_IMG_DIR = "Training/Data/Train_data/RGB"
-TRAIN_MASK_DIR = "Training/Data/Train_data/Masks" 
+TRAIN_MASK_DIR = "Training/Data/Train_data/MASK" 
 VAL_IMG_DIR = "Training/Data/Test_data/RGB"
-VAL_MASK_DIR = "Training/Data/Test_data/Masks"
+VAL_MASK_DIR = "Training/Data/Test_data/MASK"
 
 
 def train_fn(loader, model, optimizer, loss_fn, scaler):
@@ -42,6 +42,7 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
     img_grid = 0
     img_grid2 = 0
     for batch_idx, (data, targets) in enumerate(loop):
+
         # img_grid = torchvision.utils.make_grid(data)
         # img_grid2 = torchvision.utils.make_grid(targets)
 
@@ -75,7 +76,7 @@ def main():
             A.Rotate(limit=35, p=1.0),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.1),
-            A.RandomBrightness(p=0.3), #Originally not used
+            A.RandomBrightnessContrast(p=0.3), #Originally not used
             A.Normalize(
                 mean=[0.0, 0.0, 0.0],
                 std=[1.0, 1.0, 1.0],
@@ -119,9 +120,6 @@ def main():
         load_checkpoint(torch.load("model/crack500BrightnessAugmentationv3.pth.tar"), model)
 
 
-
-
-
     check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
     max_score = 0
@@ -130,6 +128,7 @@ def main():
     
     
     for epoch in range(0, NUM_EPOCHS):
+        loss = 0
         loss = train_fn(train_loader, model, optimizer, loss_fn, scaler)
 
         # save model
@@ -141,7 +140,7 @@ def main():
 
         # check accuracy
         IoU, F1, acc= check_accuracy(val_loader, model, device=DEVICE)
-
+        
         if IoU > max_score:
             print("Best model found => saving")
             max_score = IoU
@@ -150,15 +149,15 @@ def main():
 
             # print some examples to a folder
             save_predictions_as_imgs(
-            val_loader, model, folder="tests/saved_images/", device=DEVICE
+            val_loader, model, folder="Training\Images", device=DEVICE
             )
-        
+
         if epoch == 30:
             print("Changing learning rate to 1e-5")
             optimizer.param_groups[0]['lr'] = 1e-5
         if epoch == 60:
             print("Changing learning rate to 1e-6")
-            optimizer.param_groups[0]['lr'] = 1e-5
+            optimizer.param_groups[0]['lr'] = 1e-6
         
         print(f"EPOCH: {epoch}/{NUM_EPOCHS}")
         tb.add_scalar('Accuraccy', acc, epoch)

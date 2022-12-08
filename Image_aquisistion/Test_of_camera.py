@@ -4,7 +4,7 @@ import time
 import json
 import serial
 # opens connections to arduino
-arduino = serial.Serial(port='COM8', baudrate=57600, timeout=.1)
+arduino = serial.Serial(port='COM6', baudrate=57600, timeout=.01)
 time.sleep(0.1)
 arduino.flushInput()
 # number written to the arduino to synchronise python and the arduino, if it does'nt try putting a 1 inside the "".
@@ -28,9 +28,9 @@ def conversion():
 tik = time.time()
 
 # define a video capture object
-vid = cv.VideoCapture(2)
+vid = cv.VideoCapture(0)
 
-frequensy_of_images= 1 #seconds between image is taken
+frequensy_of_images= 0.1 #seconds between image is taken
 num_image = 0 # variable that iterates for image taken
 
 # Storing image filename, the time the image is takne, and the delta value of the encoder
@@ -42,6 +42,11 @@ encoder2 = []
 save_path = "Image_aquisistion/Images"
 if not os.path.exists(os.getcwd() + "/" + save_path):
     os.makedirs(os.getcwd() + "/" + save_path)
+
+for i in (range(100)):
+    ret, frame = vid.read()
+    cv.imshow('frame', frame)
+    cv.waitKey(1)
 
 while(True):
     # Capture the video frame

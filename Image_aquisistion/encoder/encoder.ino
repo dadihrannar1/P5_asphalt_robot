@@ -17,7 +17,7 @@ int onlyforward=0;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
+  Serial.begin(57600);
 }
 
 unsigned long last_time = 0;
@@ -30,10 +30,10 @@ void loop() {
   int sens3 = analogRead(A0);
   int sens4 = analogRead(A1);
   //peakValue(sens1,sens2,sens3,sens4);
-  bool sens_1_read = bool_read(sens1, 150);
+  bool sens_1_read = bool_read(sens1, 100);
   bool sens_2_read = bool_read(sens2, 90);
-  bool sens_3_read = bool_read(sens3, 40);
-  bool sens_4_read = bool_read(sens4, 100);
+  bool sens_3_read = bool_read(sens3, 50);
+  bool sens_4_read = bool_read(sens4, 80);
 
 // test to see if the sensors are reading
 /*
@@ -89,36 +89,17 @@ else{
 
 */
 // Checks the state of the sensor to show how many ticks the wheel has gone around.
-if (sens_2_read != sens_2_state){
-  if(sens_1_read != sens_2_read){
+if (sens_1_read != sens_1_state){
+  if(sens_2_read != sens_1_read){
     delta1 -= 1;
   }
   else{
     delta1 +=1;
   }
 }
-if (sens_3_read != sens_3_state){
-  if(sens_4_read != sens_3_read){
-    delta2 += 1;
-  }
-  else{
-    delta2 -=1;
-  }
-//}
-//  if ((sens_1_read != sens_1_state && sens_1_read == sens_2_state) || (sens_2_read != sens_2_state && sens_2_read != sens_1_state)){
-//    delta1 += 1;
-//  }
-//  if ((sens_2_read != sens_2_state && sens_2_read == sens_1_state) || (sens_1_read != sens_1_state && sens_1_read != sens_2_state)){
-//    delta1 -= 1;
-//  }
-//
-//  if ((sens_3_read != sens_3_state && sens_3_read == sens_4_state) || (sens_4_read != sens_4_state && sens_4_read != sens_4_state)){
- //   delta2 += 1;
- // }
- // if ((sens_4_read != sens_4_state && sens_4_read == sens_4_state) || (sens_4_read != sens_3_state && sens_3_read != sens_4_state)){
- //   delta2 -= 1;
- // }
- }
+if (sens_4_read != sens_4_state){
+    delta2 +=1;
+}
 
   // syncing to the python code
    if (Serial.available() > 0){
@@ -150,20 +131,4 @@ void send_delta(unsigned long timer){
     delta1=0;
     delta2=0;
   }
-}
-
-void peakValue(float ein,float swei,float drei, float vier){
-  if(peak1 <= ein){
-    peak1 = ein;
-  }
-  if(peak2 <= swei){
-    peak2 = swei;
-  }
-  if(peak3 <= drei){
-    peak3 = drei;
-  }
-  if(peak4 <= vier){
-    peak4 = vier;
-  }
-  return 0;
 }

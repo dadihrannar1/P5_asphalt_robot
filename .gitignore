@@ -5,7 +5,7 @@
 __pycache__/
 
 # Ignore trained model files
-*.pth.tar
+
 
 # Ignore images
 *.png
@@ -18,14 +18,16 @@ trajectory_generation/src/Test_Kinematics.py
 
 #ignore videos
 *.MP4
-Image_aquisistion/image_details.json
+#ignore
+*.json
 
 # Ignore webots in progress files
 *.wbproj
 
 #ignore videos
 *.MP4
-Image_aquisistion/image_details.json
+#ignore
+*.json
 
 #Ignoring pycharm
 **/.idea/
