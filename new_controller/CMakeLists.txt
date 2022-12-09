@@ -7,7 +7,7 @@ project(new_controller)
 find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs message_generation tf moveit_ros_planning_interface)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+#find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -87,13 +87,13 @@ target_link_libraries(offset
 	${catkin_LIBRARIES} ${LIBRARIES}
 )
 
-add_executable(display_test controllers/crack_movement.cpp)
+#add_executable(display_test controllers/crack_movement.cpp)
 
-add_dependencies(display_test new_controller_generate_messages_cpp)
+#add_dependencies(display_test new_controller_generate_messages_cpp)
 
-target_link_libraries(display_test
-	${catkin_LIBRARIES} ${LIBRARIES}
-)
+#target_link_libraries(display_test
+#	${catkin_LIBRARIES} ${LIBRARIES}
+#)
 
 
 
@@ -101,8 +101,8 @@ target_link_libraries(display_test
 ## Install ##
 #############
 
-install(TARGETS display_test
-       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+#install(TARGETS display_test
+#       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(TARGETS offset
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
