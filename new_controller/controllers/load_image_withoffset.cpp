@@ -1,29 +1,49 @@
 #include <iostream>
 #include <fstream>
-#include <string>
-#include <cstring> 
+#include <new_controller/display_movement.h>
+
+#include <ros/ros.h>
+
+#include <webots_ros/display_draw_line.h>
+#include <webots_ros/display_image_delete.h>
+#include <webots_ros/display_image_load.h>
+#include <webots_ros/display_image_new.h>
+#include <webots_ros/display_image_paste.h>
+
+#include <webots_ros/set_int.h>
+#include <webots_ros/set_float.h>
+
+
+#include <signal.h>
+#include <std_msgs/String.h>
+#include <cmath>
 #include <vector>
-
-#include "ros/ros.h"
-
-
-float pixelSize = 0.9712;
-float tickSize = 277.8/100;
-
-float tickPixel = pixelSize/tickSize;
-
-std::vector<std::string> filenames;
-std::vector<int> enctime;
-std::vector<int> encoder1;
-std::vector<int> encoder2;
+#include <cstring> 
 
 
-int main(int argc, char **argv){
-    ros::init(argc, argv, "a");
-    ros::NodeHandle n;
+#define TIME_STEP 32 
+#define NUM_DISPLAYS 25
 
-   std::fstream jsonfile;
-   jsonfile.open("/media/sf_shared_files/Images_lang2/image_details.json",std::ios::in); //open a file to perform read operation using file object
+Class DisplayMover();
+
+int main(int argc, char **argv) {
+
+}
+
+Class DisplayMover(){
+
+}
+
+
+void jsonFileReader(std::string path){
+  // world sizes
+  float pixelSize = 0.9712;
+  float tickSize = 277.8/100;
+
+  float tickPixel = pixelSize/tickSize;
+
+  std::fstream jsonfile;
+   jsonfile.open(path,std::ios::in); //open a file to perform read operation using file object
    if (jsonfile.is_open()){ //checking whether the file is open
       // define variables
       std::string tp;
@@ -37,31 +57,26 @@ int main(int argc, char **argv){
             }
         if(tp == "]]"){continue;} // End of document
 
+        std::istringstream fileStream(tp);
+        std::string f_name;
         switch(j){
             case 0:
-            filenames.push_back(tp);
+            while(getline(fileStream, f_name, '/')){} // I only care for the file name
+            filenames_crack.push_back(f_name);
             break;
             case 1:
-            enctime.push_back(std::stoi(tp));
+            time_IRL.push_back(std::stoi(tp));
             break;
             case 2:
-            encoder1.push_back(std::stoi(tp));
+            encoder1.push_back(std::stoi(tp)/tickPixel); // save the encoder values as pixel offset
             break;
             case 3:
-            encoder2.push_back(std::stoi(tp));
+            encoder2.push_back(std::stoi(tp)/tickPixel);
             break;
         }
       }
       jsonfile.close(); //close the file object.
+      ROS_INFO("files");
+      ROS_INFO_STREAM(j);
    }
-int i = 0;
-for(auto n=filenames.begin(); n!=filenames.end();n++){
-    std::istringstream fileStream(*n);
-    std::string f_name;
-    while(getline(fileStream, f_name, '/')){}
-    int offset = encoder1[i]/tickPixel;
-    ROS_INFO_STREAM(offset);
-    i++;
-}
-
 }

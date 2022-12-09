@@ -7,8 +7,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation 0.5362167788598338 -0.015450800888508075 -0.8439388833446934 3.1902131163722585
-  position -0.1347050229222156 0.04289767329916919 7.098582733688028
+  orientation 0.6156918094471117 -0.025831764593149807 -0.7875635312263676 3.2076495603322766
+  position 1.740745188320101 0.14802367667653507 7.073822717429309
 }
 TexturedBackground {
   luminosity 0.5
@@ -30,6 +30,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor25"
+            }
             LinearMotor {
               name "Display_motor25"
               maxForce 10000
@@ -49,7 +52,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -66,6 +69,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor24"
+            }
             LinearMotor {
               name "Display_motor24"
               maxForce 10000
@@ -85,7 +91,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -102,6 +108,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor23"
+            }
             LinearMotor {
               name "Display_motor23"
               maxForce 10000
@@ -121,7 +130,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -138,6 +147,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor22"
+            }
             LinearMotor {
               name "Display_motor22"
               maxForce 10000
@@ -157,7 +169,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -174,6 +186,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor21"
+            }
             LinearMotor {
               name "Display_motor21"
               maxForce 10000
@@ -193,7 +208,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -210,6 +225,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor20"
+            }
             LinearMotor {
               name "Display_motor20"
               maxForce 10000
@@ -229,7 +247,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -246,6 +264,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor19"
+            }
             LinearMotor {
               name "Display_motor19"
               maxForce 10000
@@ -265,7 +286,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -282,6 +303,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor18"
+            }
             LinearMotor {
               name "Display_motor18"
               maxForce 10000
@@ -301,7 +325,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -318,6 +342,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor17"
+            }
             LinearMotor {
               name "Display_motor17"
               maxForce 10000
@@ -337,7 +364,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -354,6 +381,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor16"
+            }
             LinearMotor {
               name "Display_motor16"
               maxForce 10000
@@ -373,7 +403,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -390,6 +420,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor15"
+            }
             LinearMotor {
               name "Display_motor15"
               maxForce 10000
@@ -409,7 +442,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -426,6 +459,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor14"
+            }
             LinearMotor {
               name "Display_motor14"
               maxForce 10000
@@ -445,7 +481,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -462,6 +498,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor13"
+            }
             LinearMotor {
               name "Display_motor13"
               maxForce 10000
@@ -481,7 +520,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -498,6 +537,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor12"
+            }
             LinearMotor {
               name "Display_motor12"
               maxForce 10000
@@ -517,7 +559,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -534,6 +576,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor11"
+            }
             LinearMotor {
               name "Display_motor11"
               maxForce 10000
@@ -553,7 +598,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -570,6 +615,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor10"
+            }
             LinearMotor {
               name "Display_motor10"
               maxForce 10000
@@ -589,7 +637,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -606,6 +654,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor9"
+            }
             LinearMotor {
               name "Display_motor9"
               maxForce 10000
@@ -625,7 +676,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -642,6 +693,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor8"
+            }
             LinearMotor {
               name "Display_motor8"
               maxForce 10000
@@ -661,7 +715,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -678,6 +732,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor7"
+            }
             LinearMotor {
               name "Display_motor7"
               maxForce 10000
@@ -697,7 +754,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -714,6 +771,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor6"
+            }
             LinearMotor {
               name "Display_motor6"
               maxForce 10000
@@ -733,7 +793,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -750,6 +810,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor5"
+            }
             LinearMotor {
               name "Display_motor5"
               maxForce 10000
@@ -769,7 +832,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -786,6 +849,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor4"
+            }
             LinearMotor {
               name "Display_motor4"
               maxForce 10000
@@ -805,7 +871,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -822,6 +888,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor3"
+            }
             LinearMotor {
               name "Display_motor3"
               maxForce 10000
@@ -841,7 +910,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -858,6 +927,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor2"
+            }
             LinearMotor {
               name "Display_motor2"
               maxForce 10000
@@ -877,7 +949,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
@@ -894,6 +966,9 @@ Robot {
             axis 1 0 0
           }
           device [
+            PositionSensor {
+              name "position sensor1"
+            }
             LinearMotor {
               name "Display_motor1"
               maxForce 10000
@@ -913,7 +988,7 @@ Robot {
                       }
                     }
                     geometry Plane {
-                      size 1.6 1.2
+                      size 1.8647 1.0438
                     }
                   }
                 ]
