@@ -4,6 +4,7 @@
 
 #include <ros/ros.h>
 #include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
 #include <webots_ros/display_draw_line.h>
 #include <webots_ros/display_image_delete.h>
@@ -26,12 +27,6 @@
 #define TIME_STEP 32 
 #define NUM_DISPLAYS 25
 
-class DisplayMover;
-
-int main(int argc, char **argv) {
-    ros::init(argc, argv, "displays");
-}
-
 class DisplayMover {
     private:
     float real_width = 1.86; // size of the cameras FoV
@@ -43,6 +38,7 @@ class DisplayMover {
 
     ros::ServiceClient pos_motor_client[NUM_DISPLAYS] = {}; 
     ros::ServiceClient vel_motor_client[NUM_DISPLAYS] = {};
+    ros::Subscriber subMotorpos[NUM_DISPLAYS] = {};
     float curr_vel = 0;
     std::vector<std::string> filenames_crack;
     std::vector<int> time_IRL;
@@ -100,9 +96,9 @@ class DisplayMover {
 
     }
 
-    void readDisplaypos(const webots_ros::Float64Stamped::ConstPtr &value){
+    void readDisplaypos(const webots_ros::Float64Stamped::ConstPtr &value, int disp_num){
         float x_length = value->data;
-        int disp_num = 1;
+        ROS_INFO_STREAM(x_length);
         if (x_length >= real_width){
 
             // Set up the speed so we can move back to the start
@@ -121,24 +117,22 @@ class DisplayMover {
         }
     }
 
-    void SetSpeed(webots_ros::set_float::Request &msg, webots_ros::set_float::Response &ans){
+    
+
+    public:
+
+    bool setSpeed(webots_ros::set_float::Request &msg, webots_ros::set_float::Response &ans){
         curr_vel = msg.value;
         webots_ros::set_float motor_srv;
         webots_ros::set_float pos_srv;
         motor_srv.request.value = curr_vel; // motor speed is in m/s
-
+        pos_srv.request.value = 100; // motor speed is in m/s
         for(int i = 0; i<NUM_DISPLAYS;i++){
             vel_motor_client[i].call(motor_srv);
-
-            // Set up the speed so we can move back to the start
-
-            motor_srv.request.value = 100; // motor speed is in m/s
             pos_motor_client[i].call(pos_srv);
         }
-        
+        return true;
     }
-
-    public:
     
     DisplayMover(){
         // set time step for encoder activation
@@ -150,14 +144,28 @@ class DisplayMover {
             // Start up the encoders
             ros::ServiceClient encoderClient = n.serviceClient<webots_ros::set_int>(model_name + "/position_sensor" + std::to_string(i+1) +"/enable");
             encoderClient.call(timeStepSrv);
-            ros::Subscriber subLeft = n.subscribe<webots_ros::Float64Stamped> (model_name + "/position_sensor" + std::to_string(i+1) + "/value", 1, &DisplayMover::readDisplaypos);
-            //ros::Subscriber subLeft = n.subscribe<webots_ros::Float64Stamped>(model_name + "/position_sensor" + std::to_string(i+1) + "/value", 1, boost::bind(&DisplayMover::readDisplaypos,_1,&i));
 
             // set_position client
-            vel_motor_client[i] = n.serviceClient<webots_ros::set_float>(model_name + "/position_sensor" + std::to_string(i+1) + "/set_velocity");
-            pos_motor_client[i] = n.serviceClient<webots_ros::set_float>(model_name + "/position_sensor" + std::to_string(i+1) + "/set_position");
+            vel_motor_client[i] = n.serviceClient<webots_ros::set_float>(model_name + "/Display_motor" + std::to_string(i+1) + "/set_velocity");
+            pos_motor_client[i] = n.serviceClient<webots_ros::set_float>(model_name + "/Display_motor" + std::to_string(i+1) + "/set_position");
         }
+        
+        // Due to the encoders needing to activate we sleep a little
+        ros::Duration(0.1).sleep();
+        for(int i = 0; i<NUM_DISPLAYS;i++){
+           subMotorpos[i] = n.subscribe<webots_ros::Float64Stamped> (model_name + "/position_sensor" + std::to_string(i+1) + "/value", 1, boost::bind(&DisplayMover::readDisplaypos, this, _1, i));
+        }
+        ros::ServiceServer displayMotor = n.advertiseService("display_vel", &DisplayMover::setSpeed, this);
+        ros::spin();
     }
 };
 
+
+
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "displays");
+    DisplayMover display;
+    
+    return 0;
+}
 

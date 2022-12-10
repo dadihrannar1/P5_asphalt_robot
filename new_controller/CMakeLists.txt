@@ -7,7 +7,7 @@ project(new_controller)
 find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs message_generation tf moveit_ros_planning_interface)
 
 ## System dependencies are found with CMake's conventions
-#find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -57,6 +57,7 @@ catkin_package(
 
 set(WEBOTS_HOME /usr/local/webots)
 link_directories($ENV{WEBOTS_HOME}/lib/controller)
+link_directories(${Boost_LIBRARY_DIRS})
 set (LIBRARIES m ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 set(WEBOTS_INCLUDE
@@ -69,22 +70,29 @@ ${WEBOTS_HOME}/include/controller/cpp/utils
 include_directories( 
 ${catkin_INCLUDE_DIRS}
 ${WEBOTS_INCLUDE}
+${Boost_INCLUDE_DIRS}
 )
 
 
 ## Instructions for keyboard_teleop node
 
-add_executable(offset controllers/load_image_withoffset.cpp)
+
 add_executable(manipulator controllers/manipulator_controller.cpp)
 
 add_dependencies(manipulator new_controller_generate_messages_cpp)
-add_dependencies(offset new_controller_generate_messages_cpp)
+
 
 target_link_libraries(manipulator
 	${catkin_LIBRARIES} ${LIBRARIES}
 )
+
+
+add_executable(offset controllers/load_image_withoffset.cpp)
+add_dependencies(offset new_controller_generate_messages_cpp)
+
 target_link_libraries(offset
 	${catkin_LIBRARIES} ${LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 
 #add_executable(display_test controllers/crack_movement.cpp)

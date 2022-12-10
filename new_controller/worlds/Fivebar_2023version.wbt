@@ -36,6 +36,7 @@ Robot {
             LinearMotor {
               name "Display_motor25"
               maxForce 10000
+              maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -75,6 +76,7 @@ Robot {
             LinearMotor {
               name "Display_motor24"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -114,6 +116,7 @@ Robot {
             LinearMotor {
               name "Display_motor23"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -153,6 +156,7 @@ Robot {
             LinearMotor {
               name "Display_motor22"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -192,6 +196,7 @@ Robot {
             LinearMotor {
               name "Display_motor21"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -231,6 +236,7 @@ Robot {
             LinearMotor {
               name "Display_motor20"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -270,6 +276,7 @@ Robot {
             LinearMotor {
               name "Display_motor19"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -309,6 +316,7 @@ Robot {
             LinearMotor {
               name "Display_motor18"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -348,6 +356,7 @@ Robot {
             LinearMotor {
               name "Display_motor17"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -387,6 +396,7 @@ Robot {
             LinearMotor {
               name "Display_motor16"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -426,6 +436,7 @@ Robot {
             LinearMotor {
               name "Display_motor15"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -465,6 +476,7 @@ Robot {
             LinearMotor {
               name "Display_motor14"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -504,6 +516,7 @@ Robot {
             LinearMotor {
               name "Display_motor13"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -543,6 +556,7 @@ Robot {
             LinearMotor {
               name "Display_motor12"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -582,6 +596,7 @@ Robot {
             LinearMotor {
               name "Display_motor11"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -621,6 +636,7 @@ Robot {
             LinearMotor {
               name "Display_motor10"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -660,6 +676,7 @@ Robot {
             LinearMotor {
               name "Display_motor9"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -699,6 +716,7 @@ Robot {
             LinearMotor {
               name "Display_motor8"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -738,6 +756,7 @@ Robot {
             LinearMotor {
               name "Display_motor7"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -777,6 +796,7 @@ Robot {
             LinearMotor {
               name "Display_motor6"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -816,6 +836,7 @@ Robot {
             LinearMotor {
               name "Display_motor5"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -855,6 +876,7 @@ Robot {
             LinearMotor {
               name "Display_motor4"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -894,6 +916,7 @@ Robot {
             LinearMotor {
               name "Display_motor3"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -933,6 +956,7 @@ Robot {
             LinearMotor {
               name "Display_motor2"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
@@ -972,6 +996,7 @@ Robot {
             LinearMotor {
               name "Display_motor1"
               maxForce 10000
+maxVelocity 100000
             }
           ]
           endPoint Solid {
