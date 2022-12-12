@@ -386,7 +386,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
 
     Length_of_image_space = 1.6
 
-    endEffector_speed = 0.458  # m/s
+    endEffector_speed = 0.305  # m/s
 
     print(last_pos)
 
