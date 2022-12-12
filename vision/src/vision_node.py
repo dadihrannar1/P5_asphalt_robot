@@ -31,14 +31,14 @@ capture_src = 0
 
 # Path to model
 current_path = str(Path(__file__).parent)
-model_name = 'crack500v4.pth.tar'
+model_name = 'TrainedModel.pth.tar'
 
 # Processing device for running model
 DEVICE = 'cpu'
 
-# Parameters
-HEIGHT = 320
-WIDTH = 480
+# Parameters for image size
+HEIGHT = int(1080/2)
+WIDTH = int(1920/2)
 
 
 # Class structure for tranferring data between the processes
@@ -190,7 +190,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transm
         
         #
         img_raw_old = np.copy(local_image)
-        img_raw_old = cv2.resize(img_raw_old,(480,320),interpolation=cv2.INTER_AREA)
+        img_raw_old = cv2.resize(img_raw_old,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
         img_raw_old = cv2.cvtColor(img_raw_old,cv2.COLOR_BGR2GRAY)
         
         event_transmit_ready.wait()

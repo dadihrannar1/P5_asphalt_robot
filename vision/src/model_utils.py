@@ -81,7 +81,7 @@ class UNET(nn.Module):
 def load_model(model_path, features=[64,128,256,512]):
     model = UNET(in_channels=3, out_channels=1, features=features)
     checkpoint = load(model_path, map_location=device('cpu'))
-    model.load_state_dict(checkpoint["state_dict"])
+    model.load_state_dict(checkpoint)
     model.eval()
     model.cpu()
 
