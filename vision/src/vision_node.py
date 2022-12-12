@@ -312,8 +312,6 @@ def visualize(frame: Frame, p1, offset):
     return blank_image
 
 # Function for adding angles bounded to [0, 2*PI[
-
-
 def angle_add(angle_1, angle_2):
     if(angle_1 + angle_2 >= 2*math.pi):
         return angle_1 + angle_2 - 2*math.pi
@@ -345,41 +343,6 @@ def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transf
         x = result[0, 0]
         y = result[1, 0]
         return x, y
-
-
-def adjust_Speed():
-    Length_of_image_space = 1.6
-
-    endEffector_speed = 0.305  # m/s
-
-    print(last_pos)
-
-    crack_length, distance_no_crack = calculate_trajectory_length(
-        np.array(local_data.path), np.array(last_pos))
-
-    last_pos = [local_data.path[-1][0], local_data.path[-1][1]-320]
-
-    print("length of crack " + str(crack_length))
-    print("length without crack " + str(distance_no_crack*PIXEL_SIZE))
-
-    time_to_fix_cracks = (crack_length*PIXEL_SIZE +
-                          distance_no_crack*PIXEL_SIZE)/endEffector_speed
-
-    vehicle_speed = Length_of_image_space/time_to_fix_cracks
-
-    print("The vehicle can drive " + str(vehicle_speed))
-
-    speed_in_pixles = vehicle_speed/PIXEL_SIZE
-
-    print("This is how fast I should drive in pixle speed" + str(speed_in_pixles))
-
-    time_it_takes_to_finish_crack_pic = 480/speed_in_pixles
-
-    print(time_it_takes_to_finish_crack_pic)
-
-    DEAD_ZONE = 0.72
-
-    print("I have traveled: " + str(traveled_y*PIXEL_SIZE))
 
 
 def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
@@ -444,10 +407,8 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         world_orientation = angle_add(world_orientation, angle)
 
         # Transform everything from camera frame to base frame
-        traveled_x_base, traveled_y_base = transform_coordinates(
-            traveled_x, traveled_y, transform_camera_to_base)
-        world_pose_x_base, world_pose_y_base = transform_coordinates(
-            world_pose_x, world_pose_y, transform_camera_to_base)
+        traveled_x_base, traveled_y_base = transform_coordinates(traveled_x, traveled_y, transform_camera_to_base)
+        world_pose_x_base, world_pose_y_base = transform_coordinates(world_pose_x, world_pose_y, transform_camera_to_base)
 
         # Publish transform from camera
         tf_msg = nav_msgs.Odometry()
@@ -490,8 +451,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
                 message.header.frame_id = "world_frame"
                 message.header.stamp.secs = secs
                 message.header.stamp.nsecs = nsecs
-                coords = transform_coordinates(
-                    path[0] * PIXEL_SIZE, path[1] * PIXEL_SIZE, transform_camera_to_world.transform)
+                coords = transform_coordinates(path[0] * PIXEL_SIZE, path[1] * PIXEL_SIZE, transform_camera_to_world.transform)
                 message.point.x = coords[0]
                 message.point.y = coords[1]
                 # Used for sending the end of crack information
@@ -507,7 +467,6 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
             continue
 
 #
-
 
 def shutoffthread(process):
     import sys
