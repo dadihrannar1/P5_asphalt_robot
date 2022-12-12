@@ -106,6 +106,13 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
 
     image_path = current_path + '/images/*.png'
     images = sorted(glob.glob(image_path))
+
+    # Set alignment values for first runthrough where there is no previous image alignment
+    img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
+    traveled_x = 0
+    traveled_y = 0
+    angle = 0
+
     print('Thread 1 started (frames_from_files)')
     for filename in images:
         frame_time = time.time_ns()
@@ -120,6 +127,18 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         #cv2.imshow('corrected', visualize)
         # cv2.waitKey(0)
 
+        # 
+        if img_raw_old.any():
+            new_image = cv2.resize(frame_cropped,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
+            new_image = cv2.cvtColor(new_image,cv2.COLOR_BGR2GRAY)
+
+            angle, traveled_x, traveled_y = image_aligner.visual_odometry(img_raw_old, new_image)
+
+        #
+        img_raw_old = np.copy(frame_cropped)
+        img_raw_old = cv2.resize(img_raw_old,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
+        img_raw_old = cv2.cvtColor(img_raw_old,cv2.COLOR_BGR2GRAY)
+
         # Wait for next thread to be ready to recieve
         event_transmit_ready.wait()
         event_transmit_ready.clear()
@@ -128,6 +147,7 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         lock.acquire()
         data_out.set_data(frame_cropped)
         data_out.set_frame_time(frame_time)
+        data_out.set_image_offset(angle, traveled_x, traveled_y)
         lock.release()
 
         # Notify next frame of available data
@@ -151,13 +171,6 @@ def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transm
         ),
         ToTensorV2()])
 
-    # Set alignment values for first runthrough where there is no previous image alignment
-    img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
-    local_image = 0
-    traveled_x = 0
-    traveled_y = 0
-    angle = 0
-
     event_receive_ready.set()
 
     # Main thread loop
@@ -171,19 +184,11 @@ def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transm
         lock_in.acquire()
         local_image = data_in.get_data()
         local_frame_time = data_in.get_frame_time()
+        angle, traveled_x, traveled_y = data_in.get_image_offset()
         lock_in.release()
 
         event_receive_ready.set()
         #print('Thread 2 got data')
-
-        #
-        if img_raw_old.any():
-            new_image = cv2.resize(
-                local_image, (WIDTH, HEIGHT), interpolation=cv2.INTER_AREA)
-            new_image = cv2.cvtColor(new_image, cv2.COLOR_BGR2GRAY)
-
-            angle, traveled_x, traveled_y = image_aligner.image_aligner_cpu(
-                img_raw_old, new_image)
 
         augmentented = detect_transform(image=local_image)
         data = augmentented["image"].to(device=DEVICE)
@@ -191,13 +196,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transm
         output = torch.sigmoid(model(data))
         output = torch.squeeze(output)
         preds = (output > 0.5).float()
-
-        #
-        img_raw_old = np.copy(local_image)
-        img_raw_old = cv2.resize(
-            img_raw_old, (WIDTH, HEIGHT), interpolation=cv2.INTER_AREA)
-        img_raw_old = cv2.cvtColor(img_raw_old, cv2.COLOR_BGR2GRAY)
-
+        
         event_transmit_ready.wait()
         event_transmit_ready.clear()
 

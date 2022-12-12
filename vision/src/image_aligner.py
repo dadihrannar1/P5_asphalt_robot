@@ -4,7 +4,7 @@ import math
 from scipy.spatial.transform import Rotation
 
 # Finds the affine transform between two images using the CPU
-def image_aligner_cpu(img1, img2, max_features=5000, min_match_count=10, keep_best_ratio=0.25):
+def visual_odometry(img1, img2, max_features=5000, min_match_count=10, keep_best_ratio=0.25):
     # find the key points and descriptors with SIFT
     sift = cv2.ORB_create(max_features)
     kp1, des1 = sift.detectAndCompute(img1, None)
