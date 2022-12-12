@@ -10,8 +10,6 @@
         4.1: ros::topic /fivebarTrailer/PosL/value
 */ 
 
-#include <istream>
-
 #include "ros/ros.h"
 
 #include <webots_ros/Int32Stamped.h>
@@ -36,7 +34,6 @@
 
 ros::ServiceClient leftMotorClient;
 ros::ServiceClient rightMotorClient;
-
 
 
 // Global variables for calculatred angles

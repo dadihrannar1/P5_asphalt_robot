@@ -2,7 +2,6 @@
 import json
 import cv2
 import pickle
-import numpy as np
 from pathlib import Path
 
 
@@ -183,6 +182,9 @@ class DisplayService(object):
         return 1
     
 rospy.init_node('webots_display')
+# Wait for the simulation controller.
+rospy.wait_for_service("/fivebarTrailer/robot/time_step")
+
 display = DisplayService()
 rospy.spin()
 
