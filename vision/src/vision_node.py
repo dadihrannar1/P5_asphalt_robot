@@ -21,17 +21,19 @@ import image_aligner
 from trajectory_planning import Crack, Frame, map_cracks, process_image, calculate_trajectory_length
 import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
+from std_msgs.msg import Float64
 import atexit
 import pickle
 import glob
-from vision.srv import Display_input, Display_inputRequest
+import json
+#from vision.srv import Display_input, Display_inputRequest
 
 
 # Camera source (0 for webcam)
 capture_src = 0
 
 # Path to model
-current_path = str(Path(__file__).parent)
+current_path = Path(__file__).parent
 model_name = 'TrainedModel.pth.tar'
 
 # Processing device for running model
@@ -99,26 +101,33 @@ def frames_from_camerastream(data_out, lock, event):
             event.set()
             lock.release()
 
+#Callback for vehicle velocity (m/s), calculates time to next image
+vehicle_speed = ''
+def vehicle_vel_callback(msg):
+    vehicle_speed = msg.data
+    
 
 def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
-    with open(current_path + '/calib_matrix.pkl', 'rb') as file:
+    vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+
+    with open(str(current_path) + '/calib_matrix.pkl', 'rb') as file:
         map_x = pickle.load(file)
         map_y = pickle.load(file)
 
-    image_path = current_path + '/images/*.png'
-    images = sorted(glob.glob(image_path))
+    image_path = '/media/sf_SharedVMFolder'
+    images = sorted(glob.glob(f"{image_path}/*.png"))
 
     # Start the image stitcher with the same path as the images loaded in the vision node
-    request = Display_inputRequest()
-    request.path = current_path + '/images' # Path must contain json file and images
-    request.start_image = 1 # first image number
-    request.amount_of_images = 50 # number of images (max ~60)
+    #request = Display_inputRequest()
+    #request.path = '/media/sf_SharedVMFolder' # Path must contain json file and images
+    #request.start_image = 1210 # first image number
+    #request.amount_of_images = 50 # number of images (max ~60)
 
-    rospy.init_node('start_image_stitch')
-    rospy.wait_for_service('/input_display')
+    #rospy.init_node('start_image_stitch')
+    #rospy.wait_for_service('/input_display')
 
-    image_stitch = rospy.ServiceProxy('/input_display', Display_input)
-    image_stitch.call(request)
+    #image_stitch = rospy.ServiceProxy('/input_display', Display_input)
+    #image_stitch.call(request)
 
     # Set alignment values for first runthrough where there is no previous image alignment
     img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
@@ -126,8 +135,32 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     traveled_y = 0
     angle = 0
 
+    # Read JSON file
+    with open(f"{image_path}/image_details.json") as json_file:
+        data = json.load(json_file)
+        filename = data[0]
+        timer = [int(s) for s in data[1]]  # Converting string to int
+        encoder1 = [int(s) for s in data[2]]
+        encoder2 = [int(s) for s in data[3]]
+
+    previous_time = time.time()
+
     print('Thread 1 started (frames_from_files)')
-    for filename in images:
+    for i, filename in enumerate(images):
+        if type(vehicle_speed) == str:
+            # Wait to get first image for as long as the arduino recorded
+            while time.time() > previous_time + timer[i]/1000:
+                time.sleep(0.1)
+            previous_time = time.time() + timer[i]/1000
+        else:
+            # Convert encoder ticks and desired vehicle speed to wait time for next image
+            time_to_next_image = (encoder1[i+1] * 0.38*math.pi/100) / vehicle_speed 
+            
+            # Wait to get first image for as long as the vehicle velocity demands
+            while time.time() > previous_time + time_to_next_image:
+                time.sleep(0.1)
+            previous_time = time.time() + time_to_next_image
+
         frame_time = time.time_ns()
         frame = cv2.imread(filename)
 
