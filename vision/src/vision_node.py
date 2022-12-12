@@ -409,12 +409,12 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
 
     # Scalar from pixels to distances in camera frame
     PIXEL_SIZE = 0.0009712  # In meters
-    STANDARD_COVARIANCE = [0.05, 0.006, 0.01, 0.01, 0.01, 0.000009,
-                           0.006, 0.05, 0.01, 0.01, 0.01, 0.01,
-                           0.01, 0.01, 0.05, 0.01, 0.01, 0.01,
-                           0.01, 0.01, 0.01, 0.09, 0.01, 0.01,
-                           0.01, 0.01, 0.01, 0.01, 0.09, 0.01,
-                           0.000009, 0.01, 0.01, 0.01, 0.01, 0.09]
+    STANDARD_COVARIANCE = [1.9074e-05, 0, 0, 0, 0, 0,
+                           0, 1.9074e-05, 0, 0, 0, 0,
+                           0, 0, 1.9074e-05, 0, 0, 0,
+                           0, 0, 0, 1.9074e-05, 0, 0,
+                           0, 0, 0, 0, 1.9074e-05, 0,
+                           0, 0, 0, 0, 0, 1.9074e-05]
 
     event_receive_ready.set()
 
