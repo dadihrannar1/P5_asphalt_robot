@@ -24,6 +24,7 @@ import nav_msgs.msg as nav_msgs
 import atexit
 import pickle
 import glob
+from vision.srv import Display_input, Display_inputRequest
 
 
 # Camera source (0 for webcam)
@@ -106,6 +107,18 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
 
     image_path = current_path + '/images/*.png'
     images = sorted(glob.glob(image_path))
+
+    # Start the image stitcher with the same path as the images loaded in the vision node
+    request = Display_inputRequest()
+    request.path = current_path + '/images' # Path must contain json file and images
+    request.start_image = 1 # first image number
+    request.amount_of_images = 50 # number of images (max ~60)
+
+    rospy.init_node('start_image_stitch')
+    rospy.wait_for_service('/input_display')
+
+    image_stitch = rospy.ServiceProxy('/input_display', Display_input)
+    image_stitch.call(request)
 
     # Set alignment values for first runthrough where there is no previous image alignment
     img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
