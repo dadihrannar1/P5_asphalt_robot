@@ -1,0 +1,5 @@
+string path
+int64 start_image
+int64 amount_of_images
+---
+int64 A

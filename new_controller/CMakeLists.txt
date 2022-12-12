@@ -87,13 +87,6 @@ target_link_libraries(manipulator
 )
 
 
-add_executable(offset controllers/load_image_withoffset.cpp)
-add_dependencies(offset new_controller_generate_messages_cpp)
-
-target_link_libraries(offset
-	${catkin_LIBRARIES} ${LIBRARIES}
-  ${Boost_LIBRARIES}
-)
 
 #add_executable(display_test controllers/crack_movement.cpp)
 
@@ -112,7 +105,7 @@ target_link_libraries(offset
 #install(TARGETS display_test
 #       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
-install(TARGETS offset
+install(TARGETS manipulator
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #install(TARGETS new_controller
