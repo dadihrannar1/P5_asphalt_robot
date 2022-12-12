@@ -386,7 +386,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
 
     Length_of_image_space = 1.6
 
-    motor_speed = 0.458  # m/s
+    endEffector_speed = 0.458  # m/s
 
     print(last_pos)
 
@@ -399,7 +399,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
     print("length without crack " + str(distance_no_crack*PIXEL_SIZE))
 
     time_to_fix_cracks = (crack_length*PIXEL_SIZE +
-                          distance_no_crack*PIXEL_SIZE)/motor_speed
+                          distance_no_crack*PIXEL_SIZE)/endEffector_speed
 
     vehicle_speed = Length_of_image_space/time_to_fix_cracks
 
