@@ -263,6 +263,47 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_transmit, event_tr
         #frame0Vis = visualize(frame1, frame1.path,320*0.75)
         #cv2.imshow("crack visualisation", frame0Vis)
         #cv2.waitKey(10)
+        Length_of_image_space = 1.6
+
+        motor_speed = 0.458 #m/s
+
+        
+        print(last_pos)
+        
+
+        crack_length,distance_no_crack = calculate_trajectory_length(np.array(local_data.path), np.array(last_pos) )
+
+        last_pos = [local_data.path[-1][0], local_data.path[-1][1]-320]
+
+        print("length of crack " + str(crack_length))
+        print("length without crack " + str(distance_no_crack*PIXEL_SIZE))            
+
+        time_to_fix_cracks = (crack_length*PIXEL_SIZE+distance_no_crack*PIXEL_SIZE)/motor_speed
+
+        vehicle_speed = Length_of_image_space/time_to_fix_cracks
+
+
+        print("The vehicle can drive " + str(vehicle_speed))
+
+
+        
+        speed_in_pixles = vehicle_speed/PIXEL_SIZE
+
+        print("This is how fast I should drive in pixle speed" + str(speed_in_pixles))
+        
+        time_it_takes_to_finish_crack_pic = 480/speed_in_pixles
+
+        print(time_it_takes_to_finish_crack_pic)
+
+
+        DEAD_ZONE = 0.72
+
+        
+
+        print("I have traveled: " +str(traveled_y*PIXEL_SIZE))
+
+
+
 
 #Visualise cracks for debugging
 def visualize(frame: Frame, p1, offset):
