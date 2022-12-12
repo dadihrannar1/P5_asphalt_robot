@@ -348,6 +348,41 @@ def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transf
         return x, y
 
 
+def adjust_Speed():
+    Length_of_image_space = 1.6
+
+    endEffector_speed = 0.305  # m/s
+
+    print(last_pos)
+
+    crack_length, distance_no_crack = calculate_trajectory_length(
+        np.array(local_data.path), np.array(last_pos))
+
+    last_pos = [local_data.path[-1][0], local_data.path[-1][1]-320]
+
+    print("length of crack " + str(crack_length))
+    print("length without crack " + str(distance_no_crack*PIXEL_SIZE))
+
+    time_to_fix_cracks = (crack_length*PIXEL_SIZE +
+                          distance_no_crack*PIXEL_SIZE)/endEffector_speed
+
+    vehicle_speed = Length_of_image_space/time_to_fix_cracks
+
+    print("The vehicle can drive " + str(vehicle_speed))
+
+    speed_in_pixles = vehicle_speed/PIXEL_SIZE
+
+    print("This is how fast I should drive in pixle speed" + str(speed_in_pixles))
+
+    time_it_takes_to_finish_crack_pic = 480/speed_in_pixles
+
+    print(time_it_takes_to_finish_crack_pic)
+
+    DEAD_ZONE = 0.72
+
+    print("I have traveled: " + str(traveled_y*PIXEL_SIZE))
+
+
 def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
     rospy.init_node('vision_publisher', anonymous=True)
     point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size=10)
@@ -383,39 +418,6 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
                            0.000009, 0.01, 0.01, 0.01, 0.01, 0.09]
 
     event_receive_ready.set()
-
-    Length_of_image_space = 1.6
-
-    endEffector_speed = 0.305  # m/s
-
-    print(last_pos)
-
-    crack_length, distance_no_crack = calculate_trajectory_length(
-        np.array(local_data.path), np.array(last_pos))
-
-    last_pos = [local_data.path[-1][0], local_data.path[-1][1]-320]
-
-    print("length of crack " + str(crack_length))
-    print("length without crack " + str(distance_no_crack*PIXEL_SIZE))
-
-    time_to_fix_cracks = (crack_length*PIXEL_SIZE +
-                          distance_no_crack*PIXEL_SIZE)/endEffector_speed
-
-    vehicle_speed = Length_of_image_space/time_to_fix_cracks
-
-    print("The vehicle can drive " + str(vehicle_speed))
-
-    speed_in_pixles = vehicle_speed/PIXEL_SIZE
-
-    print("This is how fast I should drive in pixle speed" + str(speed_in_pixles))
-
-    time_it_takes_to_finish_crack_pic = 480/speed_in_pixles
-
-    print(time_it_takes_to_finish_crack_pic)
-
-    DEAD_ZONE = 0.72
-
-    print("I have traveled: " + str(traveled_y*PIXEL_SIZE))
 
     print('Thread 4 started (vision_pub)')
     while not rospy.is_shutdown():
