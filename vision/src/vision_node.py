@@ -118,16 +118,16 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     images = sorted(glob.glob(f"{image_path}/*.png"))
 
     # Start the image stitcher with the same path as the images loaded in the vision node
-    #request = Display_inputRequest()
-    #request.path = '/media/sf_SharedVMFolder' # Path must contain json file and images
-    #request.start_image = 1210 # first image number
-    #request.amount_of_images = 50 # number of images (max ~60)
+    request = Display_inputRequest()
+    request.path = '/media/sf_SharedVMFolder' # Path must contain json file and images
+    request.start_image = 1210 # first image number
+    request.amount_of_images = 50 # number of images (max ~60)
 
-    #rospy.init_node('start_image_stitch')
-    #rospy.wait_for_service('/input_display')
+    rospy.init_node('start_image_stitch')
+    rospy.wait_for_service('/input_display')
 
-    #image_stitch = rospy.ServiceProxy('/input_display', Display_input)
-    #image_stitch.call(request)
+    image_stitch = rospy.ServiceProxy('/input_display', Display_input)
+    image_stitch.call(request)
 
     # Set alignment values for first runthrough where there is no previous image alignment
     img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
