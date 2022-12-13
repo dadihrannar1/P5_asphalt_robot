@@ -3,7 +3,6 @@ import time
 import numpy as np
 from skimage.morphology import skeletonize
 from skimage import measure
-import matplotlib.pyplot as plt
 import networkx as nx
 from sklearn.neighbors import NearestNeighbors
 from scipy.spatial import distance
