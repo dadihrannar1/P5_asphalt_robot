@@ -175,8 +175,6 @@ int main(int argc, char** argv){
     //Create differential drive handler
     DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
 
-    ros::Time current_time = ros::Time::now();
-
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
     FileData recorded_data = read_JSON("/media/sf_shared_files/Images_lang2/image_details.json");
 
@@ -199,7 +197,7 @@ int main(int argc, char** argv){
             previous_time = recorded_data.time[i] + time_to_next_encoder_tick + int(ros::Time::now().toNSec()/1e-6);
         }
         
-        current_time = ros::Time::now();
+        ros::Time current_time = ros::Time::now();
         
         //Compute world coordinates
         ddr_position.get_new_transform(recorded_data.encoder1.at(i), recorded_data.encoder2.at(i)); //TODO read from JSON to get encoder ticks
