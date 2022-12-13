@@ -116,16 +116,7 @@ private:
   float robot_y_min = abs(L1-L2)/1000;
   float robot_y_max = (abs(L1-L2)+1000)/1000;
 
-  TrajectoryPolynomial generate_x_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
-    TrajectoryPolynomial polynomial;
-    polynomial.a0 = start_pos;
-    polynomial.a1 = start_velocity;
-    polynomial.a2 = 3/pow(travel_time, 2) * (end_pos - start_pos) - (2/travel_time * polynomial.a1) - (1/travel_time * end_velocity);
-    polynomial.a3 = -2/pow(travel_time, 3) * (end_pos - start_pos) + (1/pow(travel_time, 2) * (end_velocity + polynomial.a1));
-    return polynomial;
-  }
-
-  TrajectoryPolynomial generate_y_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
+  TrajectoryPolynomial generate_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
     TrajectoryPolynomial polynomial;
     polynomial.a0 = start_pos;
     polynomial.a1 = start_velocity;
@@ -209,7 +200,7 @@ public:
         }
       }
       //Polynomial for x movements
-      TrajectoryPolynomial x_polynomial = generate_x_polynomial(coordinate_1.point.x, coordinate_2.point.x, start_x_velocity, end_x_velocity, travel_time);
+      TrajectoryPolynomial x_polynomial = generate_polynomial(coordinate_1.point.x, coordinate_2.point.x, start_x_velocity, end_x_velocity, travel_time);
       start_x_velocity = end_x_velocity;
 
 
@@ -236,7 +227,7 @@ public:
       float y_coord_offset_start = vehicle_speed * total_travel_time;
       float y_coord_offset_end = vehicle_speed * travel_time;
       total_travel_time += travel_time;
-      TrajectoryPolynomial y_polynomial = generate_y_polynomial(coordinate_1.point.y + y_coord_offset_start, coordinate_2.point.y + y_coord_offset_end, start_y_velocity, end_y_velocity, travel_time);
+      TrajectoryPolynomial y_polynomial = generate_polynomial(coordinate_1.point.y + y_coord_offset_start, coordinate_2.point.y + y_coord_offset_end, start_y_velocity, end_y_velocity, travel_time);
       start_y_velocity = end_y_velocity;
 
       //Make full trajectory
