@@ -149,6 +149,10 @@ public:
     for(int i = 0; i < world_trajectory_coordinates.size(); i++){
       geometry_msgs::PointStamped point_in_robot_frame = tf2_buffer.transform(world_trajectory_coordinates.at(i), "robot_frame");
 
+      //Transform distances from m to mm
+      point_in_robot_frame.point.x = point_in_robot_frame.point.x*1000;
+      point_in_robot_frame.point.y = point_in_robot_frame.point.y*1000;
+
       //Determine if coordinates are within the robot frame
       if(point_in_robot_frame.point.x < robot_x_min){}
       else if(point_in_robot_frame.point.x > robot_x_max){}
