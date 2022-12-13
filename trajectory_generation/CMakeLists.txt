@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   actionlib
+  new_controller
   #std_msgs
   #message_generation
 )
@@ -122,7 +123,10 @@ actionlib
 ## Your package locations should be listed before other locations
 
 ## Declare a C++ library
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+  new_controller  
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

@@ -9,8 +9,10 @@
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Float64.h>
+#include <new_controller/set_pos.h>
 #include <cmath>
 #include <deque>
+#include <thread>
 
 /*
 //Class to handle kinematic control and trajectory planning for the robot
@@ -93,6 +95,7 @@ struct TrajectoryPolynomial{
 struct TrajectoryCombinedPoly{
   TrajectoryPolynomial x_polynomial;
   TrajectoryPolynomial y_polynomial;
+  float delta_time;
 };
 
 class CrackMapper{
@@ -161,6 +164,7 @@ public:
       else {
         //coordinate is within robot frame
         robot_trajectory_coordinates.push_back(point_in_robot_frame);
+        world_trajectory_coordinates.erase(world_trajectory_coordinates.begin() + i);
 
         //TODO: What if the coordinate is already fixed? How do we remove them from the world trajectory?
       }
@@ -238,6 +242,7 @@ public:
       TrajectoryCombinedPoly combined_polynomial;
       combined_polynomial.x_polynomial = x_polynomial;
       combined_polynomial.y_polynomial = y_polynomial;
+      combined_polynomial.delta_time = travel_time;
       full_combined_trajectory.push_back(combined_polynomial);
     }
     return full_combined_trajectory;
@@ -250,6 +255,25 @@ float adjust_speed(){
   return vehicle_speed;
 }
 
+//Thread function for following trajectory
+void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle n, int step_size){
+  ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
+  new_controller::set_pos motorSrv; // This is the message for the motor node
+
+  for(int i = 0; i <polynomial.size(); i++){
+    int start_time;
+    int end_time = start_time + polynomial.at(i).delta_time;
+
+    for(int t = start_time; t <= end_time; t+=step_size){
+      //Send trajectory to manipulator
+      motorSrv.request.x = polynomial.at(i).x_polynomial.a3 * pow(t, 3) + polynomial.at(i).x_polynomial.a2 * pow(t, 2) + polynomial.at(i).x_polynomial.a1 * t + polynomial.at(i).x_polynomial.a0;
+      motorSrv.request.y = polynomial.at(i).y_polynomial.a3 * pow(t, 3) + polynomial.at(i).y_polynomial.a2 * pow(t, 2) + polynomial.at(i).y_polynomial.a1 * t + polynomial.at(i).y_polynomial.a0;
+      
+      ros::Duration(step_size).sleep();
+    }
+  }
+}
+
 int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
   ros::NodeHandle n;
@@ -257,13 +281,17 @@ int main(int argc, char **argv){
 
   CrackMapper trajectory_mapper;
 
+  //trajectory service frequency
+  float srv_hz = 100;
+
   while (n.ok()){
     ros::spinOnce(); //Spin subscriber once
     float vehicle_speed = adjust_speed();
-    std::deque<TrajectoryCombinedPoly> trajectory = trajectory_mapper.generate_trajectory(vehicle_speed);
+    std::deque<TrajectoryCombinedPoly> trajectory_combined = trajectory_mapper.generate_trajectory(vehicle_speed);
 
-    //TODO send trajectory to manipulator
-    
+    //Start thread to send trajectory
+    std::thread t(std::bind(trajectory_thread, trajectory_combined, n, 1/srv_hz));
+    t.join();
   }
   
   return 0;
