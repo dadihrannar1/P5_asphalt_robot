@@ -185,6 +185,7 @@ int main(int argc, char** argv){
     ros::Rate r(100);
     int previous_time = int(ros::Time::now().toNSec()/1e-6);
     
+    ros::service::waitForService("/input_display");
     //Iterate through the recorded data
     for(int i = 0; i < recorded_data.encoder1.size(); i++) {
         ros::spinOnce();    // check for incoming velocity messages

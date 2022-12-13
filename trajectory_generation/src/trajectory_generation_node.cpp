@@ -257,6 +257,7 @@ float adjust_speed(){
 
 //Thread function for following trajectory
 void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle n, int step_size){
+  ros::service::waitForService("/manipulatorSetPos");
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
   new_controller::set_pos motorSrv; // This is the message for the motor node
 
