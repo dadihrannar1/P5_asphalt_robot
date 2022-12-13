@@ -61,6 +61,7 @@ add_message_files(
 add_service_files(
   FILES
   Display_input.srv
+  Draw_workspace.srv
 )
 
 ## Generate actions in the 'action' folder
