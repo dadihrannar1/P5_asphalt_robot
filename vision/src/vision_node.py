@@ -114,12 +114,12 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         map_x = pickle.load(file)
         map_y = pickle.load(file)
 
-    image_path = '/media/sf_shared_files/Images_lang2'
+    image_path = rospy.get_param("Image_path")
     images = sorted(glob.glob(f"{image_path}/*.png"))
 
     # Start the image stitcher with the same path as the images loaded in the vision node
     request = Display_inputRequest()
-    request.path = '/media/sf_SharedVMFolder' # Path must contain json file and images
+    request.path = image_path # Path must contain json file and images
     request.start_image = 1210 # first image number
     request.amount_of_images = 50 # number of images (max ~60)
 

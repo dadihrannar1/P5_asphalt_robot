@@ -177,7 +177,10 @@ int main(int argc, char** argv){
     DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
 
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
-    FileData recorded_data = read_JSON("/media/sf_shared_files/Images_lang2/image_details.json");
+    
+    std::string json_path;
+    ros::param::get("Image_path", json_path);
+    FileData recorded_data = read_JSON(json_path + "/image_details.json");
 
     ros::Rate r(100);
     int previous_time = int(ros::Time::now().toNSec()/1e-6);
