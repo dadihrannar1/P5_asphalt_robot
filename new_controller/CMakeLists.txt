@@ -7,7 +7,7 @@ project(new_controller)
 find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs message_generation tf moveit_ros_planning_interface)
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -29,6 +29,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs messag
   add_service_files(
     FILES
     set_pos.srv
+    display_movement.srv
   )
 
 ## Generate added messages and services with any dependencies listed here
@@ -56,6 +57,7 @@ catkin_package(
 
 set(WEBOTS_HOME /usr/local/webots)
 link_directories($ENV{WEBOTS_HOME}/lib/controller)
+link_directories(${Boost_LIBRARY_DIRS})
 set (LIBRARIES m ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 set(WEBOTS_INCLUDE
@@ -68,15 +70,17 @@ ${WEBOTS_HOME}/include/controller/cpp/utils
 include_directories( 
 ${catkin_INCLUDE_DIRS}
 ${WEBOTS_INCLUDE}
+${Boost_INCLUDE_DIRS}
 )
 
 
 ## Instructions for keyboard_teleop node
 
-#add_executable(manipulator controllers/basic_moveRead_test.cpp)
+
 add_executable(manipulator controllers/manipulator_controller.cpp)
 
 add_dependencies(manipulator new_controller_generate_messages_cpp)
+
 
 target_link_libraries(manipulator
 	${catkin_LIBRARIES} ${LIBRARIES}
@@ -84,13 +88,25 @@ target_link_libraries(manipulator
 
 
 
+#add_executable(display_test controllers/crack_movement.cpp)
+
+#add_dependencies(display_test new_controller_generate_messages_cpp)
+
+#target_link_libraries(display_test
+#	${catkin_LIBRARIES} ${LIBRARIES}
+#)
+
+
 
 #############
 ## Install ##
 #############
 
+#install(TARGETS display_test
+#       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 install(TARGETS manipulator
-       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #install(TARGETS new_controller
 #        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

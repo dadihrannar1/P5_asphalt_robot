@@ -33,7 +33,7 @@ std::vector<int> generateCoord(int amountOfPoints){
   workspace[0] = L0/2-500; // left edge
   workspace[1] = L0/2+500; // right edge
   workspace[2] = abs(L1-L2); // bottom edge
-  workspace[3] = L1-L2+1000; // top edge
+  workspace[3] = abs(L1-L2)+1000; // top edge
 
   // vectors work like pointers, so when iterating through them i call their first pointer and then itterate through them
   for(auto i=w_pos.begin(); i != w_pos.end(); i=i+2){

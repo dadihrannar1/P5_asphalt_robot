@@ -7,8 +7,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.38670442379872383 0.44166428147743536 0.8095630618312064 1.6490874190139622
-  position -0.9499498374556984 -6.672264032215567 7.750526423794468
+  orientation 0.25717918814246304 -0.2851537217275604 -0.9233342949177751 4.7358672785482945
+  position -2.082730205020981 -10.56832005058521 6.793036205949
 }
 TexturedBackground {
   luminosity 0.5
@@ -18,31 +18,58 @@ TexturedBackgroundLight {
 }
 RectangleArena {
   translation 0 0 -0.01
-  floorSize 10 5
+  floorSize 20 5
 }
 Robot {
   rotation 1 0 0 1.5708
   children [
-    DEF CrackDisplay Display {
-      translation 0.0200023 0 -0.33
-      rotation 0.5773502691896258 0.5773502691896258 0.5773502691896258 -2.094399693899575
-      scale 2.31497 2.31497 2.31497
+    DEF Displays Solid {
       children [
-        Shape {
-          appearance Appearance {
-            material Material {
-            }
-            texture ImageTexture {
-              url [
-                "../Long Crack for testing/saved_image_1293.png"
-              ]
-            }
+        SliderJoint {
+          jointParameters JointParameters {
+            axis 1 0 0
           }
-          geometry Plane {
+          device [
+            PositionSensor {
+              name "position sensor1"
+            }
+            LinearMotor {
+              name "Display_motor1"
+              maxVelocity 100000
+              maxForce 10000
+            }
+          ]
+          endPoint Solid {
+            children [
+              DEF CrackDisplay Display {
+                translation 0 -0.0001 0
+                rotation -5.085772022385619e-09 0.707108281185553 0.70710528118436 3.14159
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                      }
+                      texture ImageTexture {
+                        url [
+                          "../../../../../../../media/sf_shared_files/sitched_1031-1060_image.png"
+                        ]
+                      }
+                    }
+                    geometry Plane {
+                      size 9.66925 2.41689
+                    }
+                  }
+                ]
+                name "CrackDisplay1"
+                width 10922
+                height 2730
+              }
+            ]
+            name "slider"
           }
         }
       ]
-      name "CrackDisplay"
+      name "solid(4)"
     }
     DEF Trailer Solid {
       translation 0 5.55112e-17 -5.4794e-05

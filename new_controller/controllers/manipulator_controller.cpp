@@ -10,8 +10,6 @@
         4.1: ros::topic /fivebarTrailer/PosL/value
 */ 
 
-#include <istream>
-
 #include "ros/ros.h"
 
 #include <webots_ros/Int32Stamped.h>
@@ -36,7 +34,6 @@
 
 ros::ServiceClient leftMotorClient;
 ros::ServiceClient rightMotorClient;
-
 
 
 // Global variables for calculatred angles
@@ -107,7 +104,7 @@ int main(int argc, char **argv) {
   new_controller::motor_pos encoderMsg;
 
   // Set available torque for the motors
-    // In this test we only care about if positions can be reached, so we increase the motor output to faster rach desired points
+  // In this test we only care about if positions can be reached, so we increase the motor output to faster rach desired points
   ros::ServiceClient torqueLClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorL/set_available_torque");
   ros::ServiceClient torqueRClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorR/set_available_torque");
   webots_ros::set_float torqueMsg;
