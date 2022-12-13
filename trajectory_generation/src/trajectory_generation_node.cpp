@@ -179,8 +179,8 @@ public:
       geometry_msgs::PointStamped coordinate_1 = robot_trajectory_coordinates.at(i);
       geometry_msgs::PointStamped coordinate_2 = robot_trajectory_coordinates.at(i+1);
 
-      //Maximum velocity in either x or y direction (m/s)
-      float max_operating_velocity = 0.305; //TODO this does not need to be static as it varies throughout the workspace
+      //Maximum velocity in either x or y direction (mm/s)
+      float max_operating_velocity = 305; //TODO this does not need to be static as it varies throughout the workspace
 
       //TODO: Calculate travel time as function of travel distance
       float travel_time = 0.1; //in seconds
