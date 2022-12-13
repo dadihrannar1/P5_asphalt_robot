@@ -3,10 +3,58 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/Float64.h>>
+#include <fstream>
 
 const double WHEEL_DIAMETER = 0.38*M_PI;    //Wheel diameter
 const double ENCODER_TICKS = 100;           //Ticks per encoder revolution
 const double LENGTH_BETWEEN_WHEELS = 1.466; //Axle length in meters
+
+struct FileData {
+    std::vector<std::string> filenames;
+    std::vector<int> time;
+    std::vector<int> encoder1;
+    std::vector<int> encoder2;
+};
+
+FileData read_JSON(const std::string& filepath) {
+    std::fstream jsonfile;
+    jsonfile.open(filepath,std::ios::in); //open a file to perform read operation using file object
+    if (jsonfile.is_open()){ //checking whether the file is open
+        // define variables
+        std::string tp;
+        FileData data;
+        int j = 0;
+        while(getline(jsonfile, tp, '"')){ //read data from file object and put it into string.
+        if(tp == ", "){continue;} // if it's a ", " go next
+        if(tp == "], ["){ // New file type
+            j++;
+            continue;
+            }
+        if(tp == "]]"){continue;} // End of document
+
+        switch(j){
+            case 0:
+            data.filenames.push_back(tp);
+            break;
+            case 1:
+            data.time.push_back(std::stoi(tp));
+            break;
+            case 2:
+            data.encoder1.push_back(std::stoi(tp));
+            break;
+            case 3:
+            data.encoder2.push_back(std::stoi(tp));
+            break;
+        }
+      }
+      jsonfile.close(); //close the file object.
+      return data;
+    }
+    else{
+        exit(10); //Could not open JSON file
+    }
+}
 
 //Class to handle changes in world coordinates by reading wheel encoders
 class DiffDrive{
@@ -101,14 +149,21 @@ public:
     double get_delta_z_rot(){return delta_z_rot;}
 };
 
-
-    static const boost::array<_Float64, 36> STANDARD_TWIST_COVARIANCE =
+static const boost::array<_Float64, 36> STANDARD_TWIST_COVARIANCE =
    {0.2461, 0, 0, 0, 0, 0,
     0, 0.2461, 0, 0, 0, 0,
     0, 0, 0.2461, 0, 0, 0,
     0, 0, 0, 0.2461, 0, 0,
     0, 0, 0, 0, 0.2461, 0,
     0, 0, 0, 0, 0, 0.2461};
+
+//Vehicle speed callback for simulation
+float vehicle_speed;
+bool vehicle_speed_adjusted = false;
+void vehicle_speed_callback(const std_msgs::Float64 &vehicle_vel){
+    vehicle_speed = vehicle_vel.data;
+    vehicle_speed_adjusted = true;
+}
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "odometry_publisher");
@@ -120,32 +175,35 @@ int main(int argc, char** argv){
     //Create differential drive handler
     DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
 
-    ros::Time current_time, last_time;
-    current_time = ros::Time::now();
-    last_time = ros::Time::now();
+    ros::Time current_time = ros::Time::now();
+
+    ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
+    FileData recorded_data = read_JSON("/media/sf_shared_files/Images_lang2/image_details.json");
 
     ros::Rate r(100);
-    while(n.ok()){
-        ros::spinOnce();    // check for incoming messages
+    int previous_time = int(ros::Time::now().toNSec()/1e-6);
+    
+    //Iterate through the recorded data
+    for(int i = 0; i < recorded_data.encoder1.size(); i++) {
+        ros::spinOnce();    // check for incoming velocity messages
+
+        //Wait until the next recorded timestamp from the arduino data
+        if(!vehicle_speed_adjusted){
+            while(previous_time > recorded_data.time[i]){sleep(0.1);}
+            previous_time = recorded_data.time[i] + int(ros::Time::now().toNSec()/1e-6);
+        }
+        else{
+            int time_to_next_encoder_tick = int((recorded_data.encoder1[i+1] * 0.38*M_PI/100) / vehicle_speed); //This may overflow at the last encoder increments
+
+            while(previous_time > recorded_data.time[i] + time_to_next_encoder_tick){sleep(0.1);}
+            previous_time = recorded_data.time[i] + time_to_next_encoder_tick + int(ros::Time::now().toNSec()/1e-6);
+        }
+        
         current_time = ros::Time::now();
-
+        
         //Compute world coordinates
-        ddr_position.get_new_transform(1, 1);
-        /*
-        //Publish the transform over tf2
-        geometry_msgs::TransformStamped odom_trans;
-        odom_trans.header.stamp = current_time;
-        odom_trans.header.frame_id = "world";
-        odom_trans.child_frame_id = "base_link";
+        ddr_position.get_new_transform(recorded_data.encoder1.at(i), recorded_data.encoder2.at(i)); //TODO read from JSON to get encoder ticks
 
-        odom_trans.transform.translation.x = ddr_position.get_x();
-        odom_trans.transform.translation.y = ddr_position.get_y();
-        odom_trans.transform.translation.z = 0.0;
-        odom_trans.transform.rotation = ddr_position.get_quat();
-
-        //Send the transform
-        odom_broadcaster.sendTransform(odom_trans);
-        */
         //Publish the odometry message over ROS
         nav_msgs::Odometry odom;
         odom.header.stamp = current_time;
@@ -168,7 +226,6 @@ int main(int argc, char** argv){
         //publish the message
         odom_pub.publish(odom);
 
-        last_time = current_time;
         r.sleep();
     }
 }

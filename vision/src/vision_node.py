@@ -114,7 +114,7 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         map_x = pickle.load(file)
         map_y = pickle.load(file)
 
-    image_path = '/media/sf_SharedVMFolder'
+    image_path = '/media/sf_shared_files/Images_lang2'
     images = sorted(glob.glob(f"{image_path}/*.png"))
 
     # Start the image stitcher with the same path as the images loaded in the vision node
