@@ -26,7 +26,7 @@ import atexit
 import pickle
 import glob
 import json
-#from vision.srv import Display_input, Display_inputRequest
+from vision.srv import Display_input, Display_inputRequest
 
 
 # Camera source (0 for webcam)
