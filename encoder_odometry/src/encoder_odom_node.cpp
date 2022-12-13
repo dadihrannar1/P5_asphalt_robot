@@ -3,7 +3,8 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
-#include <std_msgs/Float64.h>>
+#include <std_msgs/Float64.h>
+#include <boost/array.hpp>
 #include <fstream>
 
 const double WHEEL_DIAMETER = 0.38*M_PI;    //Wheel diameter
@@ -160,8 +161,8 @@ static const boost::array<_Float64, 36> STANDARD_TWIST_COVARIANCE =
 //Vehicle speed callback for simulation
 float vehicle_speed;
 bool vehicle_speed_adjusted = false;
-void vehicle_speed_callback(const std_msgs::Float64 &vehicle_vel){
-    vehicle_speed = vehicle_vel.data;
+void vehicle_speed_callback(const std_msgs::Float64::ConstPtr& vehicle_vel){
+    vehicle_speed = vehicle_vel -> data;
     vehicle_speed_adjusted = true;
 }
 

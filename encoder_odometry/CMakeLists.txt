@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -112,6 +112,8 @@ tf2_ros
 #message_runtime
 )
 
+link_directories(${Boost_LIBRARY_DIRS})
+
 ###########
 ## Build ##
 ###########
@@ -120,7 +122,10 @@ tf2_ros
 ## Your package locations should be listed before other locations
 
 ## Declare a C++ library
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(
+  ${catkin_INCLUDE_DIRS} 
+  ${Boost_INCLUDE_DIRS}
+  )
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -133,7 +138,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 add_executable(encoder_odom_node src/encoder_odom_node.cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(encoder_odom_node ${catkin_LIBRARIES})
+target_link_libraries(encoder_odom_node ${catkin_LIBRARIES} ${LIBRARIES})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
