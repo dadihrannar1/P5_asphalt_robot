@@ -105,11 +105,16 @@ private:
   //List of current points in world coordinates
   std::deque<geometry_msgs::PointStamped> world_trajectory_coordinates;
 
-  //Bounds for robot workspace in robot frame
-  float robot_x_min = 0;
-  float robot_x_max = 1;
-  float robot_y_min = 0;
-  float robot_y_max = 1;
+  //Robot link sizes (in mm)
+  int L0 = 176;
+  int L1 = 573;
+  int L2 = 714;
+
+  //Bounds for robot workspace in robot frame (in m)
+  float robot_x_min = (L0/2-500)/1000;
+  float robot_x_max = (L0/2+500)/1000;
+  float robot_y_min = abs(L1-L2)/1000;
+  float robot_y_max = (abs(L1-L2)+1000)/1000;
 
   TrajectoryPolynomial generate_x_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
     TrajectoryPolynomial polynomial;
@@ -120,14 +125,12 @@ private:
     return polynomial;
   }
 
-  //TODO: add vehicle velocity
-  TrajectoryPolynomial generate_y_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time, float vehicle_speed){
+  TrajectoryPolynomial generate_y_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
     TrajectoryPolynomial polynomial;
     polynomial.a0 = start_pos;
     polynomial.a1 = start_velocity;
     polynomial.a2 = 3/pow(travel_time, 2) * (end_pos - start_pos) - (2/travel_time * polynomial.a1) - (1/travel_time * end_velocity);
     polynomial.a3 = -2/pow(travel_time, 3) * (end_pos - start_pos) + (1/pow(travel_time, 2) * (end_velocity + polynomial.a1));
-
     return polynomial;
   }
 
@@ -173,16 +176,19 @@ public:
     float start_x_velocity = 0;
     float start_y_velocity = 0;
 
+    //Keeping track of the movements in the y direction
+    float total_travel_time = 0;
+
     //Generate polynomial between all the points in robot frame
     for(int i = 0; i < robot_trajectory_coordinates.size()-1; i++){
       geometry_msgs::PointStamped coordinate_1 = robot_trajectory_coordinates.at(i);
       geometry_msgs::PointStamped coordinate_2 = robot_trajectory_coordinates.at(i+1);
 
-      //Calculate travel time (function of how far it has to travel???)
-      float travel_time;
-
       //Maximum velocity in either x or y direction (m/s)
       float max_operating_velocity = 0.305; //TODO this does not need to be static as it varies throughout the workspace
+
+      //TODO: Calculate travel time as function of travel distance
+      float travel_time = 0.1; //in seconds
 
       //Define x trajectory end velocity dependent on which part is calculated
       float end_x_velocity;
@@ -225,7 +231,12 @@ public:
           end_y_velocity = 0;
         }
       }
-      TrajectoryPolynomial y_polynomial = generate_y_polynomial(coordinate_1.point.y, coordinate_2.point.y, start_y_velocity, end_y_velocity, travel_time, vehicle_speed);
+      
+      //Calculate how much the y coordinates moved based on the speed of the vehicle and the amount of time spent on the trajectory so far
+      float y_coord_offset_start = vehicle_speed * total_travel_time;
+      float y_coord_offset_end = vehicle_speed * travel_time;
+      total_travel_time += travel_time;
+      TrajectoryPolynomial y_polynomial = generate_y_polynomial(coordinate_1.point.y + y_coord_offset_start, coordinate_2.point.y + y_coord_offset_end, start_y_velocity, end_y_velocity, travel_time);
       start_y_velocity = end_y_velocity;
 
       //Make full trajectory
@@ -257,6 +268,7 @@ int main(int argc, char **argv){
     std::deque<TrajectoryCombinedPoly> trajectory = trajectory_mapper.generate_trajectory(vehicle_speed);
 
     //TODO send trajectory to manipulator
+    
   }
   
   return 0;
