@@ -1,11 +1,15 @@
 <launch>
     <arg name="Image_path" default="absolute image path" />
+    <arg name="Start_image" default="1" />
+    <arg name="Amount_of_images" default="20" /> <!--Max 50-->
 
     <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen" > 
     <param name="Image_path" value=$"(arg Image_path)" />
 
     <node name="vision" pkg="vision" type="vision_node.py" output="screen"> 
-    <param name="Image_path" value=$"(arg Image_path)" />
+    <param name="Image_path" value=$"(arg Image_path)" >
+    <param name="Start_image" value=$"(arg Start_image)" >
+    <param name="Amount_of_images" value=$"(arg Amount_of_images)" />
 
     <node name="trajectory_generation" pkg="trajectory_generation" type="trajectory_generation_node" output="screen"/>
 

@@ -120,8 +120,8 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     # Start the image stitcher with the same path as the images loaded in the vision node
     request = Display_inputRequest()
     request.path = image_path # Path must contain json file and images
-    request.start_image = 1210 # first image number
-    request.amount_of_images = 50 # number of images (max ~60)
+    request.start_image = rospy.get_param("Start_image") # first image number
+    request.amount_of_images = rospy.get_param("Amount_of_images") # number of images (max ~60)
 
     rospy.init_node('start_image_stitch')
     rospy.wait_for_service('/input_display')
