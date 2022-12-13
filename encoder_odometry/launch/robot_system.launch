@@ -1,6 +1,14 @@
 <launch>
-  <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen"/>
-  <node name="vision" pkg="vision" type="vision_node.py" output="screen"/>
+  <arg name="Image_path" default="absolute image path" />
+
+  <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen" > 
+  <param name="Image_path" value=$"(arg Image_path)" />
+  
+  <node name="vision" pkg="vision" type="vision_node.py" output="screen"> 
+  <param name="Image_path" value=$"(arg Image_path)" >
+  <param name="Start_image" value=$"(arg Start_image)" >
+  <param name="Amount_of_images" value=$"(arg Amount_of_images)" />
+
   <node name="trajectory_generation" pkg="trajectory_generation" type="trajectory_generation_node" output="screen"/>
 
 
@@ -8,7 +16,6 @@
 /home/dadi/p5_ws/src/P5_asphalt_robot/encoder_odometry/src
  and use the following command to allow access: sudo chmod +x encoder_odom_node.cpp
  (might have to do the same for vision.py), and it should be able to launch. -->
-
 
 <!-- Frame transformations are made with args="x y z yaw pitch roll frame_id child_frame"(just estimations now!)-->
 <!--  <node pkg="tf2_ros" type="static_transform_publisher" name="odom2" args="0 0 0.3 0 0 0 odom base_link" />-->
