@@ -21,6 +21,7 @@ import image_aligner
 from trajectory_planning import Crack, Frame, map_cracks, process_image, calculate_trajectory_length
 import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
+from webots_ros.srv import get_float
 from std_msgs.msg import Float64
 import atexit
 import pickle
@@ -92,7 +93,7 @@ def frames_from_camerastream(data_out, lock, event):
             time.sleep(10)  # wait 10 seconds for video stream to open
 
         while rval:
-            frame_time = time.time_ns()
+            frame_time = 0
             rval, frame = cap.read()
 
             lock.acquire()
@@ -109,6 +110,7 @@ def vehicle_vel_callback(msg):
 
 def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+    simulation_time_client = rospy.ServiceProxy(f"/fivebarTrailer/robot/get_time", get_float)
     # Shutdown extra threads when program is exiting
     atexit.register(shutoffthread)
 
@@ -147,24 +149,26 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         encoder1 = [int(s) for s in data[2]]
         encoder2 = [int(s) for s in data[3]]
 
-    previous_time = time.time()
+    previous_time = simulation_time_client.call(True)
+    previous_time = previous_time.value
     print('Thread 1 started (frames_from_files)')
     for i, filename in enumerate(filename[request.start_image:request.start_image+request.amount_of_images]):
         if type(vehicle_speed) == str:
             # Wait to get first image for as long as the arduino recorded
-            while time.time() > previous_time + timer[i]/1000:
+            curr_time = simulation_time_client.call(True)
+            while curr_time.value > previous_time + timer[i]/1000:
                 time.sleep(0.1)
-            previous_time = time.time() + timer[i]/1000
+            previous_time = curr_time.value + timer[i]/1000
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
             time_to_next_image = (encoder1[i+1] * 0.38*math.pi/100) / vehicle_speed 
             
             # Wait to get first image for as long as the vehicle velocity demands
-            while time.time() > previous_time + time_to_next_image:
+            while simulation_time_client.call(True).value > previous_time + time_to_next_image:
                 time.sleep(0.1)
-            previous_time = time.time() + time_to_next_image
+            previous_time = simulation_time_client.call(True).value + time_to_next_image
 
-        frame_time = time.time_ns()
+        frame_time = simulation_time_client.call(True).value
         frame = cv2.imread(filename)
         
 
