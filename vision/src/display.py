@@ -104,11 +104,7 @@ class DisplayService(object):
         self.display_image_load_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_load", display_image_load)
         self.display_image_paste_client  = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_paste", display_image_paste)
         self.display_image_draw_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/fill_oval", display_draw_oval)
-        display_image_color_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/set_color", set_int)
-
-        # Set the drawing color to red
-        red_color = 8914952
-        display_image_color_client.call(red_color)
+        self.display_image_color_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/set_color", set_int)
 
         # start the encoder and set a subscriber
         encService = rospy.ServiceProxy(f"{self.model_name}/position_sensor1/enable", set_int)
@@ -194,21 +190,25 @@ class DisplayService(object):
     
     # a service that draws in the workspace according to the manipulator position
     def drawInWorkspace(self, msg):
-       recieved_x = msg.x
-       recieved_y = msg.y
-       recieved_r = msg.radius
-
-       # Find the position in world coordinates
-       L0 = 176 # This is the robot distance between motors
-
-       zero_pos = (self.desired_h/2+(L0/2)/self.pixelSize, self.encpos*1000/self.pixelSize+self.desired_w/2)
-       cy,cx = (zero_pos[0]-recieved_x, zero_pos[1]-recieved_y)
-
-       # Draw image
-       a, b = (recieved_r, recieved_r)
-       self.display_image_draw_client.call(int(cx), int(cy), a, b)
+        # Set the drawing color to red
+        red_color = 8914952
+        self.display_image_color_client.call(red_color)
        
-       return True
+        recieved_x = msg.x
+        recieved_y = msg.y
+        recieved_r = msg.radius
+
+        # Find the position in world coordinates
+        L0 = 176 # This is the robot distance between motors
+
+        zero_pos = (self.desired_h/2+(L0/2)/self.pixelSize, self.encpos*1000/self.pixelSize+self.desired_w/2)
+        cy,cx = (zero_pos[0]-recieved_x, zero_pos[1]-recieved_y)
+
+        # Draw image
+        a, b = (recieved_r, recieved_r)
+        self.display_image_draw_client.call(int(cx), int(cy), a, b)
+        
+        return True
     
 
 

@@ -179,7 +179,7 @@ int main(int argc, char** argv){
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
     
     std::string json_path;
-    ros::param::get("Image_path", json_path);
+    ros::param::get("~Image_path", json_path);
     FileData recorded_data = read_JSON(json_path + "/image_details.json");
 
     ros::Rate r(100);
