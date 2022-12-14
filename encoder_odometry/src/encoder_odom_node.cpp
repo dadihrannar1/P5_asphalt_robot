@@ -18,39 +18,48 @@ struct FileData {
     std::vector<int> encoder2;
 };
 
-FileData read_JSON(const std::string& filepath) {
+FileData read_JSON(const std::string& filepath, const std::string& from_increment, const std::string& increment_amount) {
     std::fstream jsonfile;
     jsonfile.open(filepath,std::ios::in); //open a file to perform read operation using file object
     if (jsonfile.is_open()){ //checking whether the file is open
         // define variables
         std::string tp;
-        FileData data;
+        FileData read_data;
         int j = 0;
         while(getline(jsonfile, tp, '"')){ //read data from file object and put it into string.
-        if(tp == ", "){continue;} // if it's a ", " go next
-        if(tp == "], ["){ // New file type
-            j++;
-            continue;
-            }
-        if(tp == "]]"){continue;} // End of document
+            if(tp == ", "){continue;} // if it's a ", " go next
+            if(tp == "], ["){ // New file type
+                j++;
+                continue;
+                }
+            if(tp == "]]"){continue;} // End of document
 
-        switch(j){
-            case 0:
-            data.filenames.push_back(tp);
-            break;
-            case 1:
-            data.time.push_back(std::stoi(tp));
-            break;
-            case 2:
-            data.encoder1.push_back(std::stoi(tp));
-            break;
-            case 3:
-            data.encoder2.push_back(std::stoi(tp));
-            break;
+            switch(j){
+                case 0:
+                read_data.filenames.push_back(tp);
+                break;
+                case 1:
+                read_data.time.push_back(std::stoi(tp));
+                break;
+                case 2:
+                read_data.encoder1.push_back(std::stoi(tp));
+                break;
+                case 3:
+                read_data.encoder2.push_back(std::stoi(tp));
+                break;
+            }
         }
-      }
-      jsonfile.close(); //close the file object.
-      return data;
+        jsonfile.close(); //close the file object.
+
+        //Keep only the specified indecies
+        FileData return_data;
+        for(int i = std::stoi(from_increment); i <= std::stoi(increment_amount) + std::stoi(from_increment); i++) {
+            return_data.encoder1.push_back(read_data.encoder1.at(i));
+            return_data.encoder2.push_back(read_data.encoder2.at(i));
+            return_data.filenames.push_back(read_data.filenames.at(i));
+            return_data.time.push_back(read_data.time.at(i));
+        }
+        return return_data;
     }
     else{
         exit(10); //Could not open JSON file
@@ -179,8 +188,12 @@ int main(int argc, char** argv){
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
     
     std::string json_path;
+    std::string from_image;
+    std::string image_amount;
     ros::param::get("~Image_path", json_path);
-    FileData recorded_data = read_JSON(json_path + "/image_details.json");
+    ros::param::get("~Start_image", from_image);
+    ros::param::get("~Amount_of_images", image_amount);
+    FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, image_amount);
 
     ros::Rate r(100);
     int previous_time = int(ros::Time::now().toNSec()/1e-6);
