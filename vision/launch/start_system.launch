@@ -1,17 +1,19 @@
 <launch>
-    <arg name="Image_path" default="absolute image path" />
-    <arg name="Start_image" default="1" type="int"/>
-    <arg name="Amount_of_images" default="20" type="int"/> <!--Max 50-->
+    <arg name="Image_path_arg" default="absolute image path" />
+    <arg name="Start_image_arg" default="1" type="int"/>
+    <arg name="Amount_of_images_arg" default="20" type="int"/> <!--Max 50-->
 
-    <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen" > 
-    <param name="Image_path" value="$(arg Image_path)" >
-    <param name="Start_image" value="$(arg Start_image)" >
-    <param name="Amount_of_images" value=$"$(arg Amount_of_images)" />
+    <node name="encoder_odometry" pkg="encoder_odometry" type="encoder_odom_node" output="screen" args="--wait-for-param /Image_path"> 
+    <param name="Image_path" value="$(arg Image_path_arg)" />
+    <param name="Start_image" value="$(arg Start_image_arg)"/>
+    <param name="Amount_of_images" value="$(arg Amount_of_images_arg)"/>
+    </node>
 
-    <node name="vision" pkg="vision" type="vision_node.py" output="screen"> 
-    <param name="Image_path" value="$(arg Image_path)" >
-    <param name="Start_image" value="$(arg Start_image)" >
-    <param name="Amount_of_images" value="$(arg Amount_of_images)" />
+    <node name="vision" pkg="vision" type="vision_node.py" output="screen" args="--wait-for-param /Image_path"> 
+    <param name="Image_path" value="$(arg Image_path_arg)"/>
+    <param name="Start_image" value="$(arg Start_image_arg)"/>
+    <param name="Amount_of_images" value="$(arg Amount_of_images_arg)"/>
+    </node>
 
     <node name="trajectory_generation" pkg="trajectory_generation" type="trajectory_generation_node" output="screen"/>
 
@@ -66,7 +68,7 @@
     </include>
 
     <arg name="auto_close" default="false" doc="Startup mode"/>
-    <node name="manipulator" pkg="new_controller" type="manipulator" required="$(arg auto_close)"/>
-    <node name="webots_display" pkg="vision" type="display.py" required="$(arg auto_close)"/>
+    <node name="manipulator" pkg="new_controller" type="manipulator" required="$(arg auto_close)" args="--wait-for-param /Image_path"/>
+    <node name="webots_display" pkg="vision" type="display.py" required="$(arg auto_close)" args="--wait-for-param /Image_path"/>
     <!--node name="display_test" pkg="new_controller" type="display_test" required="$(arg auto_close)"/-->
 </launch>

@@ -109,21 +109,24 @@ def vehicle_vel_callback(msg):
 
 def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+    # Shutdown extra threads when program is exiting
+    atexit.register(shutoffthread)
 
     with open(str(current_path) + '/calib_matrix.pkl', 'rb') as file:
         map_x = pickle.load(file)
         map_y = pickle.load(file)
-
-    image_path = rospy.get_param("Image_path")
+    
+    rospy.init_node('start_image_stitch')
+    image_path = rospy.get_param("~Image_path")
     images = sorted(glob.glob(f"{image_path}/*.png"))
 
     # Start the image stitcher with the same path as the images loaded in the vision node
     request = Display_inputRequest()
     request.path = image_path # Path must contain json file and images
-    request.start_image = rospy.get_param("Start_image") # first image number
-    request.amount_of_images = rospy.get_param("Amount_of_images") # number of images (max ~60)
+    request.start_image = rospy.get_param("~Start_image") # first image number
+    request.amount_of_images = rospy.get_param("~Amount_of_images") # number of images (max ~60)
 
-    rospy.init_node('start_image_stitch')
+    
     rospy.wait_for_service('/input_display')
 
     image_stitch = rospy.ServiceProxy('/input_display', Display_input)
@@ -205,7 +208,9 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
 # Run as a seperate thread for the program
 def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transmit_ready, event_receive, event_receive_ready):
     # Load trained model ffrom specifed path
-    model = load_model(current_path + '/' + model_name)
+    model = load_model("/media/sf_shared_files" + '/' + model_name)#load_model(current_path + '/' + model_name)
+    # Shutdown extra threads when program is exiting
+    atexit.register(shutoffthread)
 
     # Transforms
     detect_transform = albumentations.Compose([
@@ -261,6 +266,9 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_transmit, event_tr
     img_old_seg = np.zeros(([2, 2]), dtype=np.uint8)
     old_frame = 0
     traveled = 0
+
+    # Shutdown extra threads when program is exiting
+    atexit.register(shutoffthread)
 
     event_receive_ready.set()
 
@@ -370,6 +378,7 @@ def angle_add(angle_1, angle_2):
 
 
 def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transform):
+    
     if not isinstance(transform, geo_msgs.Transform):
         raise TypeError
     else:
@@ -392,6 +401,9 @@ def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transf
 
 
 def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
+    # Shutdown extra threads when program is exiting
+    atexit.register(shutoffthread)
+
     rospy.init_node('vision_publisher', anonymous=True)
     point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('vo', nav_msgs.Odometry, queue_size=50)
@@ -514,17 +526,13 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
 
 #
 
-def shutoffthread(process):
+def shutoffthread():
     import sys
-    for p in range(len(process)):
-        print("kill thread")
-        p.terminate()
-    sys.exit(1)
+    sys.exit()
 
 
 if __name__ == "__main__":
     BaseManager.register('DataTransfer', DataTransfer)
-
     # Locks
     thread_1_to_2_data_lock = Lock()
     thread_2_to_3_data_lock = Lock()
@@ -597,8 +605,6 @@ if __name__ == "__main__":
     # Start processes and join datatransmission
     processes = [t1, t2, t3, t4]
 
-    # Shutdown extra threads when program is exiting
-    atexit.register(shutoffthread, processes)
 
     for process in processes:
         process.start()

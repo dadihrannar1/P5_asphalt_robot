@@ -257,7 +257,7 @@ float adjust_speed(){
 
 //Thread function for following trajectory
 void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle n, int step_size){
-  ros::service::waitForService("/manipulatorSetPos");
+
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
   new_controller::set_pos motorSrv; // This is the message for the motor node
 
@@ -279,6 +279,7 @@ int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
   ros::NodeHandle n;
   ros::Publisher vehicle_vel_pub = n.advertise<std_msgs::Float64>("/vehicle_speed", 10);
+  ros::topic::waitForMessage<geometry_msgs::PointStamped>("/points");
 
   CrackMapper trajectory_mapper;
 
