@@ -190,15 +190,12 @@ int main(int argc, char** argv){
     
     //Get simulation parameters from ros launch
     std::string json_path;
-    std::string from_image_str;
-    std::string image_amount_str;
+    int from_image;
+    int image_amount;
     ros::param::get("~Image_path", json_path);
-    ros::param::get("~Start_image", from_image_str);
-    ros::param::get("~Amount_of_images", image_amount_str);
-    int from_image_int = std::stoi(from_image_str);
-    int image_amount_int = std::stoi(image_amount_str);
-    FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image_int, image_amount_int);
-    
+    ros::param::get("~Start_image", from_image);
+    ros::param::get("~Amount_of_images", image_amount);
+    FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, image_amount);
 
     ros::Rate r(100);
     int previous_time = int(ros::Time::now().toNSec()/1e-6);
