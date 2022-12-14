@@ -208,13 +208,13 @@ int main(int argc, char** argv){
 
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
-            while(previous_time > recorded_data.time[i]){sleep(0.1);}
+            while(int(ros::Time::now().toNSec()/1e-6) < previous_time + recorded_data.time[i]){sleep(0.1);}
             previous_time = recorded_data.time[i] + int(ros::Time::now().toNSec()/1e-6);
         }
         else{
             int time_to_next_encoder_tick = int((recorded_data.encoder1[i+1] * 0.38*M_PI/100) / vehicle_speed); //This may overflow at the last encoder increments
 
-            while(previous_time > recorded_data.time[i] + time_to_next_encoder_tick){sleep(0.1);}
+            while(int(ros::Time::now().toNSec()/1e-6) < previous_time + time_to_next_encoder_tick){sleep(0.1);}
             previous_time = recorded_data.time[i] + time_to_next_encoder_tick + int(ros::Time::now().toNSec()/1e-6);
         }
         
