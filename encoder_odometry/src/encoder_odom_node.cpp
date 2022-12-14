@@ -19,7 +19,7 @@ struct FileData {
     std::vector<int> encoder2;
 };
 
-FileData read_JSON(const std::string& filepath, const std::string& from_increment, const std::string& increment_amount) {
+FileData read_JSON(const std::string& filepath, const int from_increment, const int increment_amount) {
     std::fstream jsonfile;
     jsonfile.open(filepath,std::ios::in); //open a file to perform read operation using file object
     if (jsonfile.is_open()){ //checking whether the file is open
@@ -54,7 +54,7 @@ FileData read_JSON(const std::string& filepath, const std::string& from_incremen
 
         //Keep only the specified indecies
         FileData return_data;
-        for(int i = std::stoi(from_increment); i <= std::stoi(increment_amount) + std::stoi(from_increment); i++) {
+        for(int i = from_increment; i <= increment_amount + from_increment; i++) {
             return_data.encoder1.push_back(read_data.encoder1.at(i));
             return_data.encoder2.push_back(read_data.encoder2.at(i));
             return_data.filenames.push_back(read_data.filenames.at(i));
@@ -188,13 +188,17 @@ int main(int argc, char** argv){
 
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
     
+    //Get simulation parameters from ros launch
     std::string json_path;
-    std::string from_image;
-    std::string image_amount;
+    std::string from_image_str;
+    std::string image_amount_str;
     ros::param::get("~Image_path", json_path);
-    ros::param::get("~Start_image", from_image);
-    ros::param::get("~Amount_of_images", image_amount);
-    FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, image_amount);
+    ros::param::get("~Start_image", from_image_str);
+    ros::param::get("~Amount_of_images", image_amount_str);
+    int from_image_int = std::stoi(from_image_str);
+    int image_amount_int = std::stoi(image_amount_str);
+    FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image_int, image_amount_int);
+    
 
     ros::Rate r(100);
     int previous_time = int(ros::Time::now().toNSec()/1e-6);
