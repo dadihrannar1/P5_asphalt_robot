@@ -501,10 +501,13 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         #DEBUG
         print("Vision sent a transform to tf\n")
 
+        while(not tf_buffer.can_transform('world_frame', 'camera_frame')):
+            print("vision waiting for transform")
+            time.sleep(1)
+
         # Get transform from camera to world for current image
         try:
-            transform_camera_to_world = tf_buffer.lookup_transform(
-                'world_frame', 'camera_frame', rospy.Time(secs, nsecs))
+            transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time(secs, nsecs))
 
             # Send each point in crack trajectory
             for path in local_data.path:
