@@ -7,6 +7,8 @@
 #include <boost/array.hpp>
 #include <fstream>
 #include <string>
+#include <webots_ros/get_float.h>
+#include <iostream>
 
 const double WHEEL_DIAMETER = 0.38*M_PI;    //Wheel diameter
 const double ENCODER_TICKS = 100;           //Ticks per encoder revolution
@@ -58,7 +60,8 @@ FileData read_JSON(const std::string& filepath, const int from_increment, const 
             return_data.encoder1.push_back(read_data.encoder1.at(i));
             return_data.encoder2.push_back(read_data.encoder2.at(i));
             return_data.filenames.push_back(read_data.filenames.at(i));
-            return_data.time.push_back(read_data.time.at(i));
+            if(!i){return_data.time.push_back(read_data.time.at(i));} //First time should be kept as is
+            return_data.time.push_back(read_data.time.at(i)-read_data.time.at(i-1)); //only record time difference
         }
         return return_data;
     }
@@ -178,7 +181,7 @@ void vehicle_speed_callback(const std_msgs::Float64::ConstPtr& vehicle_vel){
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "odometry_publisher");
-    ros::service::waitForService("/fivebarTrailer/robot/time_step");
+    //ros::service::waitForService("/fivebarTrailer/robot/time_step");
     
     ros::NodeHandle n;
     ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
@@ -190,32 +193,63 @@ int main(int argc, char** argv){
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
     
     //Get simulation parameters from ros launch
-    std::string json_path;
-    int from_image;
-    int image_amount;
+    std::string json_path = "/media/sf_SharedVMFolder/Images_lang2";
+    int from_image = 769;
+    int image_amount = 30;
     ros::param::get("~Image_path", json_path);
     ros::param::get("~Start_image", from_image);
     ros::param::get("~Amount_of_images", image_amount);
     FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, image_amount);
 
     ros::Rate r(100);
-    int previous_time = int(ros::Time::now().toNSec()/1e-6);
-    
+
     ros::service::waitForService("/input_display");
+
+    //Service for timing with webots
+    ros::service::waitForService("/fivebarTrailer/get_time");
+    ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/get_time");
+    webots_ros::get_float time_request;
+    time_request.request.ask = true;
+
+    //Get initial time
+    float previous_time;
+    if(time_client.call(time_request)){
+        previous_time =  time_request.response.value;
+    }
+    else{exit(420);}
+
     //Iterate through the recorded data
     for(int i = 0; i < recorded_data.encoder1.size(); i++) {
         ros::spinOnce();    // check for incoming velocity messages
 
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
-            while(int(ros::Time::now().toNSec()/1e-6) < previous_time + recorded_data.time[i]){sleep(0.1);}
-            previous_time = recorded_data.time[i] + int(ros::Time::now().toNSec()/1e-6);
+            while(true){
+                if(time_client.call(time_request)){
+                    float current_time = time_request.response.value;
+                    if(current_time > previous_time + recorded_data.encoder1[i]/1000){
+                        previous_time = current_time;
+                        break;
+                    }
+                    sleep(0.1);
+                }else{exit(69);} //Did not get an answer
+            }
         }
         else{
-            int time_to_next_encoder_tick = int((recorded_data.encoder1[i+1] * 0.38*M_PI/100) / vehicle_speed); //This may overflow at the last encoder increments
+            //calculate wait time
+            float time_to_next_encoder_tick = (recorded_data.encoder1[i+1] * 0.38*M_PI/100) / vehicle_speed; //This may overflow at the last encoder increments
 
-            while(int(ros::Time::now().toNSec()/1e-6) < previous_time + time_to_next_encoder_tick){sleep(0.1);}
-            previous_time = recorded_data.time[i] + time_to_next_encoder_tick + int(ros::Time::now().toNSec()/1e-6);
+            //Wait until calculated time
+            while(true){
+                if(time_client.call(time_request)){
+                    float current_time = time_request.response.value;
+                    if(current_time > previous_time + time_to_next_encoder_tick/1000){
+                        previous_time = current_time;
+                        break;
+                    }
+                    sleep(0.1);
+                }else{exit(69);} //Did not get an answer
+            }
         }
         
         ros::Time current_time = ros::Time::now();

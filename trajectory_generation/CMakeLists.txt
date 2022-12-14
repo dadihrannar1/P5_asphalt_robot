@@ -123,9 +123,23 @@ actionlib
 ## Your package locations should be listed before other locations
 
 ## Declare a C++ library
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-  new_controller  
+set(WEBOTS_HOME /usr/local/webots)
+link_directories($ENV{WEBOTS_HOME}/lib/controller)
+link_directories(${Boost_LIBRARY_DIRS})
+set (LIBRARIES m ${CMAKE_SHARED_LIBRARY_PREFIX}Controller${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}CppController${CMAKE_SHARED_LIBRARY_SUFFIX})
+
+set(WEBOTS_INCLUDE
+${WEBOTS_HOME}/include/controller/c/
+${WEBOTS_HOME}/include/controller/c/utils
+${WEBOTS_HOME}/include/controller/cpp/
+${WEBOTS_HOME}/include/controller/cpp/utils
+)
+
+include_directories( 
+${catkin_INCLUDE_DIRS}
+new_controller
+${WEBOTS_INCLUDE}
+${Boost_INCLUDE_DIRS}
 )
 
 ## Add cmake target dependencies of the library

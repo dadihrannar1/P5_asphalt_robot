@@ -10,6 +10,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Float64.h>
 #include <new_controller/set_pos.h>
+#include <webots_ros/get_float.h>
 #include <cmath>
 #include <deque>
 #include <thread>
@@ -261,6 +262,19 @@ void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeH
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
   new_controller::set_pos motorSrv; // This is the message for the motor node
 
+  //Service for timing with webots
+  ros::service::waitForService("/fivebarTrailer/get_time");
+  ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/get_time");
+  webots_ros::get_float time_request;
+  time_request.request.ask = true;
+
+  //Get initial time
+  float previous_time;
+  if(time_client.call(time_request)){
+      previous_time =  time_request.response.value;
+  }
+  else{exit(420);}
+
   for(int i = 0; i <polynomial.size(); i++){
     int start_time;
     int end_time = start_time + polynomial.at(i).delta_time;
@@ -269,8 +283,17 @@ void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeH
       //Send trajectory to manipulator
       motorSrv.request.x = polynomial.at(i).x_polynomial.a3 * pow(t, 3) + polynomial.at(i).x_polynomial.a2 * pow(t, 2) + polynomial.at(i).x_polynomial.a1 * t + polynomial.at(i).x_polynomial.a0;
       motorSrv.request.y = polynomial.at(i).y_polynomial.a3 * pow(t, 3) + polynomial.at(i).y_polynomial.a2 * pow(t, 2) + polynomial.at(i).y_polynomial.a1 * t + polynomial.at(i).y_polynomial.a0;
-      
-      ros::Duration(step_size).sleep();
+      manipulatorClient.call(motorSrv);
+      while(true){
+        if(time_client.call(time_request)){
+            float current_time = time_request.response.value;
+            if(current_time > previous_time + step_size/1000){
+                previous_time = current_time;
+                break;
+            }
+            sleep(0.01);
+        }else{exit(69);} //Did not get an answer
+      }
     }
   }
 }
