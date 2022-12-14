@@ -203,11 +203,9 @@ int main(int argc, char** argv){
 
     ros::Rate r(100);
 
-    ros::service::waitForService("/input_display");
-
     //Service for timing with webots
-    ros::service::waitForService("/fivebarTrailer/get_time");
-    ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/get_time");
+    ros::topic::waitForMessage<nav_msgs::Odometry>("/vo");
+    ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/robot/get_time");
     webots_ros::get_float time_request;
     time_request.request.ask = true;
 
@@ -225,6 +223,7 @@ int main(int argc, char** argv){
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
             while(true){
+                
                 if(time_client.call(time_request)){
                     float current_time = time_request.response.value;
                     if(current_time > previous_time + recorded_data.encoder1[i]/1000){
