@@ -4,6 +4,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Bool.h>
 #include <boost/array.hpp>
 #include <fstream>
 #include <string>
@@ -179,9 +180,14 @@ void vehicle_speed_callback(const std_msgs::Float64::ConstPtr& vehicle_vel){
     vehicle_speed_adjusted = true;
 }
 
+//
+bool vision_loaded_image = false;
+void sync_with_vision(const std_msgs::Bool::ConstPtr& result){
+    vision_loaded_image = result->data;
+}
+
 int main(int argc, char** argv){
     ros::init(argc, argv, "odometry_publisher");
-    //ros::service::waitForService("/fivebarTrailer/robot/time_step");
     
     ros::NodeHandle n;
     ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
@@ -190,7 +196,9 @@ int main(int argc, char** argv){
     //Create differential drive handler
     DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
 
+    //Siulation subscribers
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
+    ros::Subscriber sync_with_vision_sub = n.subscribe<std_msgs::Bool>("frame_publisher", 100, sync_with_vision);
     
     //Get simulation parameters from ros launch
     std::string json_path = "/media/sf_SharedVMFolder/Images_lang2";
@@ -202,8 +210,6 @@ int main(int argc, char** argv){
     FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, image_amount);
 
     ros::Rate r(100);
-
-    ros::service::waitForService("/input_display");
 
     //Service for timing with webots
     ros::service::waitForService("/fivebarTrailer/get_time");
@@ -220,7 +226,11 @@ int main(int argc, char** argv){
 
     //Iterate through the recorded data
     for(int i = 0; i < recorded_data.encoder1.size(); i++) {
-        ros::spinOnce();    // check for incoming velocity messages
+        //wait for vision node to load an image
+        while(!vision_loaded_image){
+            ros::spinOnce();
+        }
+        vision_loaded_image = false;
 
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
@@ -252,6 +262,7 @@ int main(int argc, char** argv){
                 }else{exit(69);} //Did not get an answer
             }
         }
+        
         
         //Compute world coordinates
         ddr_position.get_new_transform(recorded_data.encoder1.at(i), recorded_data.encoder2.at(i)); //TODO read from JSON to get encoder ticks
