@@ -6,6 +6,7 @@
 #include <std_msgs/Float64.h>
 #include <boost/array.hpp>
 #include <fstream>
+#include <string>
 
 const double WHEEL_DIAMETER = 0.38*M_PI;    //Wheel diameter
 const double ENCODER_TICKS = 100;           //Ticks per encoder revolution
