@@ -214,7 +214,7 @@ int main(int argc, char** argv){
     //Get initial time
     float previous_time;
     if(time_client.call(time_request)){
-        previous_time =  time_request.response.value;
+        previous_time = time_request.response.value;
     }
     else{exit(420);}
 
@@ -227,7 +227,8 @@ int main(int argc, char** argv){
             while(true){
                 if(time_client.call(time_request)){
                     float current_time = time_request.response.value;
-                    if(current_time > previous_time + recorded_data.encoder1[i]/1000){
+                    std::cout << "got a response: " << current_time << "\nwait until: " << previous_time + recorded_data.time[i]/1000 << std::endl;
+                    if(current_time > previous_time + recorded_data.time[i]/1000){
                         previous_time = current_time;
                         break;
                     }
@@ -252,14 +253,12 @@ int main(int argc, char** argv){
             }
         }
         
-        ros::Time current_time = ros::Time::now();
-        
         //Compute world coordinates
         ddr_position.get_new_transform(recorded_data.encoder1.at(i), recorded_data.encoder2.at(i)); //TODO read from JSON to get encoder ticks
 
         //Publish the odometry message over ROS
         nav_msgs::Odometry odom;
-        odom.header.stamp = current_time;
+        odom.header.stamp.fromSec(previous_time);
         odom.header.frame_id = "world_frame";
 
         //Set the position
