@@ -9,6 +9,12 @@ def visual_odometry(img1, img2, max_features=5000, min_match_count=10, keep_best
     sift = cv2.ORB_create(max_features)
     kp1, des1 = sift.detectAndCompute(img1, None)
     kp2, des2 = sift.detectAndCompute(img2, None)
+    
+
+    # DEBUG
+    #print(f"\nVisual Odometry: des1 = {des1}\n")
+    #print(f"\nVisual Odometry: des2 = {des2}\n")
+    #print("descripers1:\t" + str(des1.shape) + "\t" + str(des1.dtype) + "\ndescripers2:\t" + str(des2.shape) + "\t" + str(des2.dtype))
 
     bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)  # Matching object (crosscheck to reduce false positives)
     matches = bf.match(des1, des2)  # Match descriptors

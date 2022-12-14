@@ -178,7 +178,8 @@ void vehicle_speed_callback(const std_msgs::Float64::ConstPtr& vehicle_vel){
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "odometry_publisher");
-
+    ros::service::waitForService("/fivebarTrailer/robot/time_step");
+    
     ros::NodeHandle n;
     ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
     tf2_ros::TransformBroadcaster odom_broadcaster;

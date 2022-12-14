@@ -116,9 +116,7 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         map_x = pickle.load(file)
         map_y = pickle.load(file)
     
-    rospy.init_node('start_image_stitch')
     image_path = rospy.get_param("~Image_path")
-    images = sorted(glob.glob(f"{image_path}/*.png"))
 
     # Start the image stitcher with the same path as the images loaded in the vision node
     request = Display_inputRequest()
@@ -126,9 +124,12 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     request.start_image = rospy.get_param("~Start_image") # first image number
     request.amount_of_images = rospy.get_param("~Amount_of_images") # number of images (max ~60)
 
+    if(type(request.amount_of_images) != int):
+        exit("Thread 1: WRONG LAUNCH INPUT")
     
     rospy.wait_for_service('/input_display')
 
+    print("Thread 1: Sending images to the simulation\n")
     image_stitch = rospy.ServiceProxy('/input_display', Display_input)
     image_stitch.call(request)
 
@@ -141,15 +142,14 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
     # Read JSON file
     with open(f"{image_path}/image_details.json") as json_file:
         data = json.load(json_file)
-        filename = data[0]
+        filename = [image_path + "/" + img.split("/")[-1] for img in data[0]]
         timer = [int(s) for s in data[1]]  # Converting string to int
         encoder1 = [int(s) for s in data[2]]
         encoder2 = [int(s) for s in data[3]]
 
     previous_time = time.time()
-
     print('Thread 1 started (frames_from_files)')
-    for i, filename in enumerate(images):
+    for i, filename in enumerate(filename[request.start_image:request.start_image+request.amount_of_images]):
         if type(vehicle_speed) == str:
             # Wait to get first image for as long as the arduino recorded
             while time.time() > previous_time + timer[i]/1000:
@@ -166,6 +166,7 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
 
         frame_time = time.time_ns()
         frame = cv2.imread(filename)
+        
 
         # Undistort image, followed by rotation and cropping
         frame_corrected = cv2.remap(frame, map_x, map_y, cv2.INTER_LINEAR)
@@ -180,7 +181,7 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         if img_raw_old.any():
             new_image = cv2.resize(frame_cropped,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
             new_image = cv2.cvtColor(new_image,cv2.COLOR_BGR2GRAY)
-
+            
             angle, traveled_x, traveled_y = image_aligner.visual_odometry(img_raw_old, new_image)
 
         #
@@ -404,7 +405,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
     # Shutdown extra threads when program is exiting
     atexit.register(shutoffthread)
 
-    rospy.init_node('vision_publisher', anonymous=True)
+    #rospy.init_node('vision_publisher', anonymous=True)
     point_pub = rospy.Publisher('points', geo_msgs.PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('vo', nav_msgs.Odometry, queue_size=50)
 
@@ -541,6 +542,11 @@ if __name__ == "__main__":
     img_raw_lock = Lock()
     img_seg_lock = Lock()
     path_lock = Lock()
+
+    # Start vision node
+    rospy.init_node('vision_node')
+    # Wait for simulation
+    rospy.wait_for_service("/fivebarTrailer/robot/time_step")
 
     # Events
     thread_1_data_available = Event()  # Thread 1 has raw image ready
