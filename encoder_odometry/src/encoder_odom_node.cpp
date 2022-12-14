@@ -183,6 +183,7 @@ void vehicle_speed_callback(const std_msgs::Float64::ConstPtr& vehicle_vel){
 //
 bool vision_loaded_image = false;
 void sync_with_vision(const std_msgs::Bool::ConstPtr& result){
+    std::cout << "Encoder: Bool recieved";
     vision_loaded_image = result->data;
 }
 
@@ -212,7 +213,7 @@ int main(int argc, char** argv){
     ros::Rate r(100);
 
     //Service for timing with webots
-    ros::topic::waitForMessage<nav_msgs::Odometry>("/vo");
+    ros::service::waitForService("/fivebarTrailer/robot/get_time");
     ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/robot/get_time");
     webots_ros::get_float time_request;
     time_request.request.ask = true;
@@ -230,6 +231,7 @@ int main(int argc, char** argv){
         while(!vision_loaded_image){
             ros::spinOnce();
         }
+        std::cout << "Encoder: One image request recieved";
         vision_loaded_image = false;
 
         //Wait until the next recorded timestamp from the arduino data

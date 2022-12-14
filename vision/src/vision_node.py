@@ -21,6 +21,7 @@ import image_aligner
 from trajectory_planning import Crack, Frame, map_cracks, process_image, calculate_trajectory_length
 import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
+from std_msgs.msg import Bool
 from webots_ros.srv import get_float
 from std_msgs.msg import Float64
 import atexit
@@ -109,7 +110,8 @@ def vehicle_vel_callback(msg):
     
 
 def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
-    vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+    #vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+    rospy.init_node('vision_frame', anonymous=True)
     simulation_time_client = rospy.ServiceProxy(f"/fivebarTrailer/robot/get_time", get_float)
     # Shutdown extra threads when program is exiting
     atexit.register(shutoffthread)
@@ -119,7 +121,7 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         map_y = pickle.load(file)
     
     image_path = rospy.get_param("~Image_path")
-
+    
     # Start the image stitcher with the same path as the images loaded in the vision node
     request = Display_inputRequest()
     request.path = image_path # Path must contain json file and images
@@ -133,6 +135,7 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
 
     print("Thread 1: Sending images to the simulation\n")
     image_stitch = rospy.ServiceProxy('/input_display', Display_input)
+    framePublisher = rospy.Publisher('/frame_publisher', Bool, queue_size=5)
     image_stitch.call(request)
 
     # Set alignment values for first runthrough where there is no previous image alignment
@@ -170,6 +173,10 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
 
         frame_time = simulation_time_client.call(True).value
         frame = cv2.imread(filename)
+        while not rospy.is_shutdown():
+            print("Thread 1: Sending bool!")
+            msg = Bool(True)
+            framePublisher.publish(msg)
         
 
         # Undistort image, followed by rotation and cropping
@@ -505,7 +512,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         #DEBUG
         print("Vision sent a transform to tf\n")
 
-        while(not tf_buffer.can_transform('world_frame', 'camera_frame')):
+        while(not tf_buffer.can_transform('world_frame', 'camera_frame', rospy.Time.now())):
             print("vision waiting for transform")
             time.sleep(1)
 
@@ -554,9 +561,9 @@ if __name__ == "__main__":
     path_lock = Lock()
 
     # Start vision node
-    rospy.init_node('vision_node')
+    #rospy.init_node('vision_node')
     # Wait for simulation
-    rospy.wait_for_service("/fivebarTrailer/robot/time_step")
+    #rospy.wait_for_service("/fivebarTrailer/robot/time_step")
 
     # Events
     thread_1_data_available = Event()  # Thread 1 has raw image ready
