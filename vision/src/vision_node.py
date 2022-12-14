@@ -498,6 +498,9 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
 
         transform_pub.publish(tf_msg)
 
+        #DEBUG
+        print("Vision sent a transform to tf\n")
+
         # Get transform from camera to world for current image
         try:
             transform_camera_to_world = tf_buffer.lookup_transform(

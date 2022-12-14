@@ -279,6 +279,9 @@ int main(int argc, char** argv){
         //publish the message
         odom_pub.publish(odom);
 
+        //DEBUG
+        std::cout << "encoder sent a transform to tf" << std::endl;
+
         r.sleep();
     }
 }
