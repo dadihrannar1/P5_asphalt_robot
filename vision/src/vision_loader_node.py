@@ -5,6 +5,7 @@ import tf2_ros
 import tf.transformations as tf_convert
 import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
+from std_msgs.msg import Float64
 import math
 import time
 import pickle
@@ -44,12 +45,13 @@ def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transf
         y = result[1, 0]
         return x, y
 
-def vision_pub(data_in):
+def vision_pub(paths, timestamps, offsets):
     rospy.init_node('vision_publisher', anonymous=True)
     point_pub = rospy.Publisher('/points', geo_msgs.PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
+    vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
 
-    r = rospy.Rate(100)  # 100hz
+    r = rospy.Rate(100)  # 100hz used for sending coordinates
 
     # Transform listener for getting transforms from TF
     tf_buffer = tf2_ros.Buffer(rospy.Time(100))
@@ -79,18 +81,18 @@ def vision_pub(data_in):
                            0, 0, 0, 0, 0, 1.9074e-05]
 
     print('Started vision_pub')
-    while not rospy.is_shutdown():
-        # Wait for event flag for new trajectory
+    for i in range(len(paths)):
+        # Wait for webots timing
 
 
         # Fetch trajectory
-        local_data = data_in.get_data()
-        local_frame_time = data_in.get_frame_time()
-        angle, traveled_x, traveled_y = data_in.get_image_offset()
+        path = paths[i]
+        timestap = timestamps[i]
+        angle, traveled_x, traveled_y = offsets[i]
 
         # Split timestamp to secs and nsecs
-        nsecs = local_frame_time % int(1000000000)
-        secs = int((local_frame_time - nsecs)/1000000000)
+        nsecs = timestap % int(1000000000)
+        secs = int((timestap - nsecs)/1000000000)
 
         # Calculate world pose
         world_pose_x += traveled_x * PIXEL_SIZE
@@ -142,17 +144,17 @@ def vision_pub(data_in):
             transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time(secs, nsecs))
 
             # Send each point in crack trajectory
-            for path in local_data.path:
+            for point in path:
                 # geometry_msgs PointStamped Message
                 message = geo_msgs.PointStamped()
                 message.header.frame_id = "world_frame"
                 message.header.stamp.secs = secs
                 message.header.stamp.nsecs = nsecs
-                coords = transform_coordinates(path[0] * PIXEL_SIZE, path[1] * PIXEL_SIZE, transform_camera_to_world.transform)
+                coords = transform_coordinates(point[0] * PIXEL_SIZE, point[1] * PIXEL_SIZE, transform_camera_to_world.transform)
                 message.point.x = coords[0]
                 message.point.y = coords[1]
                 # Used for sending the end of crack information
-                message.point.z = path[2]
+                message.point.z = point[2]
 
                 point_pub.publish(message)
                 r.sleep()
@@ -164,4 +166,11 @@ def vision_pub(data_in):
             continue
 
 if __name__ == "__main__":
-    vision_pub()
+    # load pickle file
+    with open('vision_output.pkl', 'rb') as f:
+        vision_output = pickle.load(f)
+
+    paths_from_pkl = vision_output[0]  # list of paths (list of points)
+    timestamps_from_pkl = vision_output[1]  # list of milliseconds
+    offsets_from_pkl = vision_output[2]  # list of (angle, traveled_x, traveled_y)
+    vision_pub(paths=paths_from_pkl, timestamps=timestamps_from_pkl, offsets=offsets_from_pkl)
