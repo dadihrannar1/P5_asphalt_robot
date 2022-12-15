@@ -93,7 +93,7 @@ if __name__ == "__main__":
     timestamps = []
     offsets = []
 
-    atexit.register(shutoff_savedata, file_path, pkl_data)
+    #atexit.register(shutoff_savedata, file_path, pkl_data)
 
     # Read JSON file
     with open(f"{image_path}/image_details.json") as json_file:
