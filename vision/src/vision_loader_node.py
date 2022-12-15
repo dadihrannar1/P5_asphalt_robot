@@ -6,6 +6,7 @@ import tf.transformations as tf_convert
 import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
 from std_msgs.msg import Float64
+from webots_ros.srv import get_float
 import math
 import time
 import pickle
@@ -50,6 +51,7 @@ def vision_pub(paths, timestamps, offsets):
     point_pub = rospy.Publisher('/points', geo_msgs.PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
     vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+    simulation_time_client = rospy.ServiceProxy(f"/fivebarTrailer/robot/get_time", get_float)
 
     r = rospy.Rate(100)  # 100hz used for sending coordinates
 
@@ -82,17 +84,31 @@ def vision_pub(paths, timestamps, offsets):
 
     print('Started vision_pub')
     for i in range(len(paths)):
-        # Wait for webots timing
-
-
         # Fetch trajectory
         path = paths[i]
         timestap = timestamps[i]
-        angle, traveled_x, traveled_y = offsets[i]
+        angle, traveled_x, traveled_y = offsets[i, 2]
 
-        # Split timestamp to secs and nsecs
-        nsecs = timestap % int(1000000000)
-        secs = int((timestap - nsecs)/1000000000)
+        # Wait for webots timing
+        previous_time = simulation_time_client.call(True)
+        previous_time = previous_time.value
+        if type(vehicle_speed) == str:
+            # Wait to get first image for as long as the arduino recorded
+            curr_time = simulation_time_client.call(True)
+            while curr_time.value > previous_time + timestap[i]/1000:
+                time.sleep(0.1)
+            previous_time = curr_time.value + timestap[i]/1000
+        else:
+            # Convert encoder ticks and desired vehicle speed to wait time for next image
+            time_to_next_image = offsets[i, 2] / vehicle_speed 
+            
+            # Wait to get first image for as long as the vehicle velocity demands
+            while simulation_time_client.call(True).value > previous_time + time_to_next_image:
+                time.sleep(0.1)
+            previous_time = simulation_time_client.call(True).value + time_to_next_image
+
+        # Get timestamp for tf
+        secs = simulation_time_client.call(True).value
 
         # Calculate world pose
         world_pose_x += traveled_x * PIXEL_SIZE
@@ -105,8 +121,7 @@ def vision_pub(paths, timestamps, offsets):
 
         # Publish transform from camera
         tf_msg = nav_msgs.Odometry()
-        tf_msg.header.stamp.secs = secs
-        tf_msg.header.stamp.nsecs = nsecs
+        tf_msg.header.stamp.from_sec(secs)
         tf_msg.header.frame_id = "world_frame"
         tf_msg.child_frame_id = "vo"
 
@@ -141,15 +156,14 @@ def vision_pub(paths, timestamps, offsets):
 
         # Get transform from camera to world for current image
         try:
-            transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time(secs, nsecs))
+            transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time.from_sec(secs))
 
             # Send each point in crack trajectory
             for point in path:
                 # geometry_msgs PointStamped Message
                 message = geo_msgs.PointStamped()
                 message.header.frame_id = "world_frame"
-                message.header.stamp.secs = secs
-                message.header.stamp.nsecs = nsecs
+                message.header.stamp.from_sec(secs)
                 coords = transform_coordinates(point[0] * PIXEL_SIZE, point[1] * PIXEL_SIZE, transform_camera_to_world.transform)
                 message.point.x = coords[0]
                 message.point.y = coords[1]
@@ -170,7 +184,8 @@ if __name__ == "__main__":
     with open('vision_output.pkl', 'rb') as f:
         vision_output = pickle.load(f)
 
-    paths_from_pkl = vision_output[0]  # list of paths (list of points)
-    timestamps_from_pkl = vision_output[1]  # list of milliseconds
-    offsets_from_pkl = vision_output[2]  # list of (angle, traveled_x, traveled_y)
+    image_number_from_pkl = vision_output[0]# list of image numbers
+    paths_from_pkl = vision_output[1]       # list of paths (list of points)
+    timestamps_from_pkl = vision_output[2]  # list of milliseconds
+    offsets_from_pkl = vision_output[3]     # list of (angle, traveled_x, traveled_y)
     vision_pub(paths=paths_from_pkl, timestamps=timestamps_from_pkl, offsets=offsets_from_pkl)
