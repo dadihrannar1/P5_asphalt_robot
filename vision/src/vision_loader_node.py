@@ -185,7 +185,7 @@ if __name__ == "__main__":
     with open('vision_output.pkl', 'rb') as f:
         vision_output = pickle.load(f)
 
-    image_number_from_pkl = vision_output[0]# list of image numbers
+    filename_from_pkl = vision_output[0]# list of image numbers
     paths_from_pkl = vision_output[1]       # list of paths (list of points)
     timestamps_from_pkl = vision_output[2]  # list of milliseconds
     offsets_from_pkl = vision_output[3]     # list of (angle, traveled_x, traveled_y)

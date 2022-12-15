@@ -54,6 +54,7 @@ class DataTransfer:
         self.offset_y = 0
         self.offset_rot = 0
         self.frame_time = 0
+        self.filename = ''
 
     def set_data(self, value):
         self.data = value
@@ -74,6 +75,12 @@ class DataTransfer:
 
     def get_frame_time(self):
         return self.frame_time
+
+    def set_filename(self, value):
+        self.filename = value
+
+    def get_filename(self):
+        return self.filename
 
 
 # Functions to acquire images
@@ -109,10 +116,9 @@ def vehicle_vel_callback(msg):
     vehicle_speed = msg.data
     
 
-def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
-    #vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+def frames_from_files(data_out, lock, event_transmit, event_transmit_ready, done_with_images_event):
     rospy.init_node('vision_frame', anonymous=True)
-    simulation_time_client = rospy.ServiceProxy(f"/fivebarTrailer/robot/get_time", get_float)
+    
     # Shutdown extra threads when program is exiting
     atexit.register(shutoffthread)
 
@@ -130,13 +136,11 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
 
     if(type(request.amount_of_images) != int):
         exit("Thread 1: WRONG LAUNCH INPUT")
-    
-    rospy.wait_for_service('/input_display')
 
-    print("Thread 1: Sending images to the simulation\n")
-    image_stitch = rospy.ServiceProxy('/input_display', Display_input)
-    framePublisher = rospy.Publisher('/frame_publisher', Bool, queue_size=5)
-    image_stitch.call(request)
+    #print("Thread 1: Sending images to the simulation\n")
+    #image_stitch = rospy.ServiceProxy('/input_display', Display_input)
+    #framePublisher = rospy.Publisher('/frame_publisher', Bool, queue_size=5)
+    #image_stitch.call(request)
 
     # Set alignment values for first runthrough where there is no previous image alignment
     img_raw_old = np.zeros(([2, 2]), dtype=np.uint8)
@@ -152,32 +156,10 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         encoder1 = [int(s) for s in data[2]]
         encoder2 = [int(s) for s in data[3]]
 
-    previous_time = simulation_time_client.call(True)
-    previous_time = previous_time.value
     print('Thread 1 started (frames_from_files)')
     for i, filename in enumerate(filename[request.start_image:request.start_image+request.amount_of_images]):
-        if type(vehicle_speed) == str:
-            # Wait to get first image for as long as the arduino recorded
-            curr_time = simulation_time_client.call(True)
-            while curr_time.value > previous_time + timer[i]/1000:
-                time.sleep(0.1)
-            previous_time = curr_time.value + timer[i]/1000
-        else:
-            # Convert encoder ticks and desired vehicle speed to wait time for next image
-            time_to_next_image = (encoder1[i+1] * 0.38*math.pi/100) / vehicle_speed 
-            
-            # Wait to get first image for as long as the vehicle velocity demands
-            while simulation_time_client.call(True).value > previous_time + time_to_next_image:
-                time.sleep(0.1)
-            previous_time = simulation_time_client.call(True).value + time_to_next_image
-
-        frame_time = simulation_time_client.call(True).value
+        frame_time = timer[i]
         frame = cv2.imread(filename)
-        while not rospy.is_shutdown():
-            print("Thread 1: Sending bool!")
-            msg = Bool(True)
-            framePublisher.publish(msg)
-        
 
         # Undistort image, followed by rotation and cropping
         frame_corrected = cv2.remap(frame, map_x, map_y, cv2.INTER_LINEAR)
@@ -209,11 +191,14 @@ def frames_from_files(data_out, lock, event_transmit, event_transmit_ready):
         data_out.set_data(frame_cropped)
         data_out.set_frame_time(frame_time)
         data_out.set_image_offset(angle, traveled_x, traveled_y)
+        data_out.set_filename(filename)
         lock.release()
 
         # Notify next frame of available data
         event_transmit.set()
         #print('Thread 1 sent data')
+
+    done_with_images_event.set()
 
 
 # Function to run model from specifed path
@@ -248,6 +233,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transm
         local_image = data_in.get_data()
         local_frame_time = data_in.get_frame_time()
         angle, traveled_x, traveled_y = data_in.get_image_offset()
+        filename = data_in.get_filename()
         lock_in.release()
 
         event_receive_ready.set()
@@ -268,6 +254,7 @@ def run_model(data_in, data_out, lock_in, lock_out, event_transmit, event_transm
         data_out.set_data(preds.cpu().numpy())
         data_out.set_frame_time(local_frame_time)
         data_out.set_image_offset(angle, traveled_x, traveled_y)
+        data_out.set_filename(filename)
         lock_out.release()
 
         event_transmit.set()
@@ -295,6 +282,7 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_transmit, event_tr
         local_img = data_in.get_data().astype(np.uint8)  # get data
         local_frame_time = data_in.get_frame_time()
         angle, traveled_x, traveled_y = data_in.get_image_offset()
+        filename = data_in.get_filename()
         lock_in.release()
 
         event_receive_ready.set()
@@ -325,6 +313,7 @@ def path_planning(data_in, data_out, lock_in, lock_out, event_transmit, event_tr
         data_out.set_data(frame1)
         data_out.set_frame_time(local_frame_time)
         data_out.set_image_offset(angle, traveled_x, traveled_y)
+        data_out.set_filename(filename)
         lock_out.release()
 
         event_transmit.set()
@@ -462,6 +451,7 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
         local_data = data_in.get_data()
         local_frame_time = data_in.get_frame_time()
         angle, traveled_x, traveled_y = data_in.get_image_offset()
+        filename = data_in.get_filename()
         lock_in.release()
 
         event_receive_ready.set()
@@ -542,12 +532,57 @@ def vision_pub(data_in, lock_in, event_receive, event_receive_ready):
             r.sleep()
             continue
 
+
+# Thread to save the recorded data to a pickle file
+def save_to_pickle(data_in, lock_in, event_receive, event_receive_ready, time_to_save):
+    # pickle file path
+    file_path = 'vision_out.pkl'
+    pkl_data = ''
+    filenames = []
+    paths = []
+    timestamps = []
+    offsets = []
+
+    # Shutdown extra threads when program is exiting
+    atexit.register(shutoff_savedata, pkl_data, file_path)
+
+    while True:
+        # Wait for event flag for new trajectory
+        event_receive.wait()
+        event_receive.clear()
+
+        # Fetch trajectory
+        lock_in.acquire()
+        path = data_in.get_data()
+        timestamp = data_in.get_frame_time()
+        offset = data_in.get_image_offset()
+        filename = data_in.get_filename()
+        lock_in.release()
+
+        event_receive_ready.set()
+        #print('Thread 4 got data')
+
+        filenames.append(filename)
+        paths.append(path)
+        timestamps.append(timestamp)
+        offsets.append(offset)
+        pkl_data = [filenames, paths, timestamps, offsets]
+
+        if time_to_save.is_set():
+            with open(file_path, 'wb') as f:
+                pickle.dump(pkl_data, f)
+
 #
 
 def shutoffthread():
     import sys
     sys.exit()
 
+def shutoff_savedata(data, file_path):
+    import sys
+    with open(file_path, 'wb') as f:
+        pickle.dump(data, f)
+    sys.exit()
 
 if __name__ == "__main__":
     BaseManager.register('DataTransfer', DataTransfer)
@@ -574,6 +609,8 @@ if __name__ == "__main__":
     thread_3_ready_for_data = Event()  # Thread 3 is ready to receive segmented image
     thread_4_ready_for_data = Event()  # Thread 4 is ready to receive path
 
+    thread_1_done_loading_images = Event() # Thread 1 is done loading images, thread 4 will save pkl file once this flag is raised
+
     img_raw_event = Event()     # Data available from thread 1
     img_seg_event = Event()     # Data available from thread 2
     transmit_event = Event()    # Data available from thread 3
@@ -596,7 +633,8 @@ if __name__ == "__main__":
         data_raw_img,
         img_raw_lock,
         thread_1_data_available,
-        thread_2_ready_for_data
+        thread_2_ready_for_data,
+        thread_1_done_loading_images
     ))
     t2 = Process(target=run_model, args=(
         data_raw_img,
@@ -618,11 +656,12 @@ if __name__ == "__main__":
         thread_2_data_available,
         thread_3_ready_for_data
     ))
-    t4 = Process(target=vision_pub, args=(
+    t4 = Process(target=save_to_pickle, args=(
         data_path,
         path_lock,
         thread_3_data_available,
-        thread_4_ready_for_data
+        thread_4_ready_for_data,
+        thread_1_done_loading_images
     ))
 
     # Start processes and join datatransmission
