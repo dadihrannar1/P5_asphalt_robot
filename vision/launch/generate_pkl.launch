@@ -2,11 +2,11 @@
     <!-- arguments -->
     <arg name="Image_path_arg" default="absolute image path" />
     <arg name="Start_image_arg" default="1"/>
-    <arg name="Amount_of_images_arg" default="20"/> <!--Max 50-->
+    <arg name="End_image_arg" default="20"/> <!--Max 50-->
     <!-- vision -->
     <node name="vision" pkg="vision" type="vision_node.py" output="screen" args="--wait-for-param /Image_path"> 
     <param name="Image_path" value="$(arg Image_path_arg)"/>
     <param name="Start_image" value="$(arg Start_image_arg)"/>
-    <param name="Amount_of_images" value="$(arg Amount_of_images_arg)"/>
+    <param name="End_image" value="$(arg End_image_arg)"/>
     </node>
 </launch>

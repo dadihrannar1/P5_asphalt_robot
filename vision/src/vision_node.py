@@ -62,9 +62,11 @@ if __name__ == "__main__":
     # Get image path from roslaunch
     image_path = rospy.get_param("~Image_path")
     start_image = rospy.get_param("~Start_image")
-    amount_of_images = rospy.get_param("~Amount_of_images")
-    if(type(amount_of_images) != int):
-        exit("Thread 1: WRONG LAUNCH INPUT")
+    end_image = rospy.get_param("~End_image")
+    if(type(end_image) != int):
+        exit("Vision_node: WRONG LAUNCH INPUT TYPE")
+    if(end_image<start_image):
+        exit("Vision_node: Invalid launch input end<start")
 
     
     # Start the image stitcher with the same path as the images loaded in the vision node
@@ -104,7 +106,7 @@ if __name__ == "__main__":
         encoder2 = [int(s) for s in data[3]]
 
     print('Started processing images')
-    for i, filename in enumerate(filename[start_image:start_image+amount_of_images]):
+    for i, filename in enumerate(filename[start_image:end_image]):
         frame = cv2.imread(image_path + "/" + filename)
 
         # Undistort image, followed by rotation and cropping
