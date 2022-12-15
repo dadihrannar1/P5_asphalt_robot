@@ -10,6 +10,7 @@ from webots_ros.srv import get_float
 import math
 import time
 import pickle
+from vision.srv import Display_input, Display_inputRequest
 
 vehicle_speed = ''
 def vehicle_vel_callback(msg):
@@ -46,12 +47,18 @@ def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transf
         y = result[1, 0]
         return x, y
 
-def vision_pub(paths, timestamps, offsets):
-    rospy.init_node('vision_publisher', anonymous=True)
+def vision_pub(filenames, paths, timestamps, offsets):
     point_pub = rospy.Publisher('/points', geo_msgs.PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
     vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
     simulation_time_client = rospy.ServiceProxy(f"/fivebarTrailer/robot/get_time", get_float)
+
+    start_image = rospy.get_param("~Start_image")
+    end_image = rospy.get_param("~End_image")
+    if(type(end_image) != int):
+        exit("Vision_node: WRONG LAUNCH INPUT TYPE")
+    if(end_image<start_image):
+        exit("Vision_node: Invalid launch input end<start")
 
     r = rospy.Rate(100)  # 100hz used for sending coordinates
 
@@ -83,8 +90,31 @@ def vision_pub(paths, timestamps, offsets):
                            0, 0, 0, 0, 0, 1.9074e-05]
 
     simulation_time_client.wait_for_service()
+
+    # find the range by matching start and end image index
+    start_index = ''
+    end_index = ''
+    for i, filename in enumerate(filenames):
+        image_number = int(filename.split('saved_image_')[0].split('.png')[0])
+        if image_number == start_image:
+            start_index = i
+        if image_number == end_image:
+            end_index = i
+    if type(start_index) == str or type(end_index) == str:
+        exit("Vision_node: Specified image range is outside pickled range")
+
+    # Start the image stitcher with the same path as the images loaded in the vision node
+    request = Display_inputRequest()
+    request.path = filenames # Path must contain json file and images
+    request.start_image = start_image # first image number
+    request.amount_of_images = end_image - start_image # number of images (max ~60)
+
+    print("Thread 1: Sending images to the simulation\n")
+    image_stitch = rospy.ServiceProxy('/input_display', Display_input)
+    image_stitch.call(request)
+
     print('Started vision_pub')
-    for i in range(len(paths)):
+    for i in range(start_index, end_index):
         # Fetch trajectory
         path = paths[i]
         timestap = timestamps[i]
@@ -101,7 +131,7 @@ def vision_pub(paths, timestamps, offsets):
             previous_time = curr_time.value + timestap[i]/1000
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
-            time_to_next_image = offsets[i, 2] / vehicle_speed 
+            time_to_next_image = offsets[i+1, 1] / vehicle_speed  #THIS MAY FUCK UP AND MAKE THE TIME TO WAIT VERY SHORT IF IT DOES CHANGE INDEX TO 2
             
             # Wait to get first image for as long as the vehicle velocity demands
             while simulation_time_client.call(True).value > previous_time + time_to_next_image:
@@ -181,12 +211,15 @@ def vision_pub(paths, timestamps, offsets):
             continue
 
 if __name__ == "__main__":
+    rospy.init_node('vision_publisher')
+
     # load pickle file
-    with open('vision_output.pkl', 'rb') as f:
+    image_path = rospy.get_param("~Image_path")
+    with open(f'{image_path}/vision_output.pkl', 'rb') as f:
         vision_output = pickle.load(f)
 
-    filename_from_pkl = vision_output[0]# list of image numbers
+    filenames_from_pkl = vision_output[0]# list of image numbers
     paths_from_pkl = vision_output[1]       # list of paths (list of points)
     timestamps_from_pkl = vision_output[2]  # list of milliseconds
     offsets_from_pkl = vision_output[3]     # list of (angle, traveled_x, traveled_y)
-    vision_pub(paths=paths_from_pkl, timestamps=timestamps_from_pkl, offsets=offsets_from_pkl)
+    vision_pub(filenames_from_pkl, paths_from_pkl, timestamps_from_pkl, offsets_from_pkl)

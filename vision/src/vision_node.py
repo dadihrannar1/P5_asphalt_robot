@@ -156,6 +156,6 @@ if __name__ == "__main__":
         offsets.append(filename)
         pkl_data = [filenames, paths, timestamps, offsets]
 
-    with open(file_path, 'wb') as f:
+    with open(f'{image_path}/vision_output.pkl', 'wb') as f:
         pickle.dump(pkl_data, f)
-    print(f"Saved to {file_path}")
+    print(f'Saved to {image_path}')
