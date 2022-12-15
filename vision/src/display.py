@@ -15,7 +15,7 @@ from webots_ros.srv import set_float
 from webots_ros.srv import set_int
 from webots_ros.srv import set_bool
 from webots_ros.msg import Float64Stamped
-
+from std_msgs.msg import Bool
 
 # Import the rospy library
 import rospy
@@ -100,6 +100,10 @@ class DisplayService(object):
         self.boolService = rospy.Service('set_display_state', set_bool, self.setState)
         self.drawingService = rospy.Service('set_draw_in_workspace', Draw_workspace, self.drawInWorkspace)
 
+        # Set up publishers
+        self.state_publisher = rospy.Publisher('display_state', Bool, queue_size=10)
+        self.state_publisher.publish(False)
+
         # Set up the display services
         self.display_image_load_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_load", display_image_load)
         self.display_image_paste_client  = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_paste", display_image_paste)
@@ -116,6 +120,9 @@ class DisplayService(object):
         self.pos_motor_client = rospy.ServiceProxy(f"{self.model_name}/Display_motor1/set_position", set_float)
 
     def setDisplay(self, request):
+        # Set indication that the display is busy
+        self.state_publisher.publish(False)
+
         path = request.path
         n_images = request.amount_of_images
         starting_image = request.start_image
@@ -152,7 +159,12 @@ class DisplayService(object):
         # Switch the images together
         result = stitch_images(images, transforms)
         h, w = result.shape[:2]
-        self.start_point = -(w*self.pixelSize)/2000
+        
+        # Picture distance from local/origo
+        distance_from_center = 1530.5/1000 # Distance found in solidworks
+        distance_from_origo = distance_from_center-(1920*self.pixelSize)/2000
+
+        self.start_point = -(w*self.pixelSize)/2000-distance_from_origo
         self.image_edge = (w*self.pixelSize)/2000
         # increase the size so it fits in webots
         top = (self.desired_h - h) // 2
@@ -178,14 +190,15 @@ class DisplayService(object):
         self.pos_motor_client.call(self.start_point)
         # Set the motor speed back to zero
         self.vel_motor_client.call(0)
-
+        
+        # Tell the rosserver display is ready to start
+        self.state_publisher.publish(True)
         return 1
 
     # A service for setting the speed of the display
     def setSpeed(self, msg):
         self.curr_vel = msg.value # motor speed is in m/s
         self.vel_motor_client.call(self.curr_vel)
-        self.pos_motor_client.call(100)
         return 1
     
     # a service that draws in the workspace according to the manipulator position

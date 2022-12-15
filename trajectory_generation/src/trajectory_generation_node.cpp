@@ -15,77 +15,6 @@
 #include <deque>
 #include <thread>
 
-/*
-//Class to handle kinematic control and trajectory planning for the robot
-class RobotKinematics{
-private:
-  //Link sizes
-  const int L0 = 250;
-  const int L1 = 620;
-  const int L2 = 745;
-
-  //Current motor angles
-  double theta1, theta2;
-
-  //Current end effector position
-  double posx, posy;
-
-  //Desired angles
-  double desired_theta1, desired_theta2;
-
-  //Desired end effector position
-  double desired_posx, desired_posy;
-
-public:
-  double *forward_kinematics(double theta1, double theta2){
-    double AB[2] = {L1 * cos(theta1), L1 * sin(theta1)};
-    double AD[2] = {L0 - L1 * cos(theta2), L1 * sin(theta2)};
-    double BD[2] = {abs(AD[0] - AB[0]), abs(AD[1] - AB[1])};
-    double L3 = sqrt(pow(BD[0], 2) + pow(BD[1], 2));
-    double phi2 = acos((L3 / 2) / (L2));
-    double phi1 = atan2(AD[1] - AB[1], AD[0] - AB[0]);
-
-    double E[] = {AB[0] + L2 * cos(phi1 + phi2), AB[1] + L2 * sin(phi1 + phi2)};
-    return E;
-  }
-
-  double *inverse_kinematics(double xPos, double yPos){
-    double F0 = sqrt(pow(xPos, 2) + pow(yPos, 2));
-    double F1 = sqrt(pow((L0 - xPos), 2) + pow(yPos, 2));
-    double y00 = acos((pow(L1, 2) + pow(F0, 2) - pow(L2, 2)) / (2 * F0 * L1));
-    double y01 = acos((pow(xPos, 2) + pow(F0, 2) - pow(yPos, 2)) / (2 * F0 * xPos));
-    double y10 = acos((pow(L1, 2) + pow(F1, 2) - pow(L2, 2)) / (2 * F1 * L1));
-    double y11 = acos((pow((L0 - xPos), 2) + pow(F1, 2) - pow(yPos, 2)) / (2 * F1 * (L0 - xPos)));
-    double Theta1 = y00 + y01;
-    double Theta2 = y10 + y11;
-
-    double Angl[] = {Theta1, Theta2};
-    return Angl;
-  }
-
-  //Create interpolation points between a start and end position
-  float *interpolated_points(float *startPos, float *endPos, const int points)
-  {
-    float wpts[] = {{startPos[0]}, {startPos[1]}};
-    for (int i = 1; i <= points; i++)
-    {
-      wpts += {{startPos[0] + (startPos[1] - startPos[0]) / points * i}, {endPos[0] + (endPos[1] - endPos[0]) / points * i}};
-    }
-    return wpts;
-  }
-
-  //Create polynomium between two points
-  float *avals(float thetastart, float thetaend, float startacc, float endacc, float tf)
-  {
-    float a[4] = {};
-    a[0] = thetastart;
-    a[1] = startacc;
-    a[2] = 3 / (pow(tf, 2)) * (thetaend - thetastart);
-    a[3] = -2 / (pow(tf, 3)) * (thetaend - thetastart);
-    return a;
-  }
-};
-*/
 struct TrajectoryPolynomial{
   float a0;
   float a1;
@@ -142,7 +71,7 @@ private:
 public:
   CrackMapper():
   tf2_buffer(ros::Duration(600)), tf2_listener(tf2_buffer){
-    point_sub = n.subscribe<geometry_msgs::PointStamped>("points", 1000, &CrackMapper::coordinate_callback, this);
+    point_sub = n.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
   }
 
   std::deque<TrajectoryCombinedPoly> generate_trajectory(float vehicle_speed){
@@ -252,7 +181,7 @@ public:
 
 //calculate neccesary vehicle speed (m/s)
 float adjust_speed(){
-  float vehicle_speed; //TODO: Calculate vehicle speed
+  float vehicle_speed = 1.388; //TODO: Calculate vehicle speed
   return vehicle_speed;
 }
 
@@ -312,7 +241,9 @@ int main(int argc, char **argv){
   while (n.ok()){
     ros::spinOnce(); //Spin subscriber once
     float vehicle_speed = adjust_speed();
+    std::cout << "Trajectory calculated vehicle speed\n";
     std::deque<TrajectoryCombinedPoly> trajectory_combined = trajectory_mapper.generate_trajectory(vehicle_speed);
+    std::cout << "Trajectory generated... Sending";
 
     //Start thread to send trajectory
     std::thread t(std::bind(trajectory_thread, trajectory_combined, n, 1/srv_hz));

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <string>
 #include <webots_ros/get_float.h>
+#include <webots_ros/set_bool.h>
 #include <iostream>
 
 const double WHEEL_DIAMETER = 0.38*M_PI;    //Wheel diameter
@@ -180,12 +181,12 @@ void vehicle_speed_callback(const std_msgs::Float64::ConstPtr& vehicle_vel){
     vehicle_speed_adjusted = true;
 }
 
-//
-bool vision_loaded_image = false;
-void sync_with_vision(const std_msgs::Bool::ConstPtr& result){
-    std::cout << "Encoder: Bool recieved";
-    vision_loaded_image = result->data;
+//Callback function for simulation to communicate readyness
+bool simulation_readystate = false;
+void simulation_ready_callback(const std_msgs::Bool::ConstPtr& ready_state){
+    simulation_readystate = ready_state->data;
 }
+
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "odometry_publisher");
@@ -194,21 +195,43 @@ int main(int argc, char** argv){
     ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
     tf2_ros::TransformBroadcaster odom_broadcaster;
 
+    //Publish initial position to tf
+    nav_msgs::Odometry odom;
+    odom.header.stamp.sec = 0;
+    odom.header.stamp.nsec = 1;
+    odom.header.frame_id = "world_frame";
+    odom.pose.pose.position.x = 0.0;
+    odom.pose.pose.position.y = 0.0;
+    odom.pose.pose.position.z = 0.0;
+    odom.pose.pose.orientation.x = 0.0;
+    odom.pose.pose.orientation.y = 0.0;
+    odom.pose.pose.orientation.z = 0.0;
+    odom.pose.pose.orientation.w = 1.0;
+    odom.pose.covariance = STANDARD_TWIST_COVARIANCE;
+    odom.child_frame_id = "base_link";
+    odom.twist.twist.linear.x = 0.0;
+    odom.twist.twist.linear.y = 0.0;
+    odom.twist.twist.angular.z = 0.0;
+    odom.twist.covariance = STANDARD_TWIST_COVARIANCE;
+    
+    //publish the message
+    odom_pub.publish(odom);
+
     //Create differential drive handler
     DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
 
-    //Siulation subscribers
+    //Simulation subscribers
     ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
-    ros::Subscriber sync_with_vision_sub = n.subscribe<std_msgs::Bool>("frame_publisher", 100, sync_with_vision);
+    ros::Subscriber simulation_ready_sub = n.subscribe<std_msgs::Bool>("/display_state", 10, simulation_ready_callback);
     
     //Get simulation parameters from ros launch
-    std::string json_path = "/media/sf_SharedVMFolder/Images_lang2";
-    int from_image = 769;
-    int image_amount = 30;
+    std::string json_path = "";
+    int from_image;
+    int to_image;
     ros::param::get("~Image_path", json_path);
     ros::param::get("~Start_image", from_image);
-    ros::param::get("~Amount_of_images", image_amount);
-    FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, image_amount);
+    ros::param::get("~End_image", to_image);
+    FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, to_image-from_image);
 
     ros::Rate r(100);
 
@@ -218,6 +241,17 @@ int main(int argc, char** argv){
     webots_ros::get_float time_request;
     time_request.request.ask = true;
 
+    // Set display_state service
+    ros::ServiceClient display_state_client = n.serviceClient<webots_ros::set_bool>("/set_display_state");
+    webots_ros::set_bool display_state_request;
+    display_state_request.request.value = true;
+    
+    // Wait for simulation to be ready
+    while(!simulation_readystate){
+        ros::spinOnce();
+    }
+    display_state_client.call(display_state_request);
+    
     //Get initial time
     float previous_time;
     if(time_client.call(time_request)){
@@ -227,20 +261,16 @@ int main(int argc, char** argv){
 
     //Iterate through the recorded data
     for(int i = 0; i < recorded_data.encoder1.size(); i++) {
-        //wait for vision node to load an image
-        while(!vision_loaded_image){
-            ros::spinOnce();
+        // Wait for simulation to be ready
+        if(!simulation_readystate){
+            exit(0);
         }
-        std::cout << "Encoder: One image request recieved";
-        vision_loaded_image = false;
-
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
             while(true){
                 
                 if(time_client.call(time_request)){
                     float current_time = time_request.response.value;
-                    std::cout << "got a response: " << current_time << "\nwait until: " << previous_time + recorded_data.time[i]/1000 << std::endl;
                     if(current_time > previous_time + recorded_data.time[i]/1000){
                         previous_time = current_time;
                         break;
@@ -293,7 +323,9 @@ int main(int argc, char** argv){
         odom_pub.publish(odom);
 
         //DEBUG
-        std::cout << "encoder sent a transform to tf" << std::endl;
+        ros::Time time;
+        time.fromSec(previous_time);
+        std::cout << "encoder sent a transform to tf, timestamp: " << time << std::endl;
 
         r.sleep();
     }

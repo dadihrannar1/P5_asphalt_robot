@@ -47,7 +47,7 @@ def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transf
         y = result[1, 0]
         return x, y
 
-def vision_pub(filenames, paths, timestamps, offsets):
+def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     point_pub = rospy.Publisher('/points', geo_msgs.PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
     vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
@@ -89,14 +89,37 @@ def vision_pub(filenames, paths, timestamps, offsets):
                            0, 0, 0, 0, 1.9074e-05, 0,
                            0, 0, 0, 0, 0, 1.9074e-05]
 
-    simulation_time_client.wait_for_service()
+    # Publish initial position to tf
+    tf_msg = nav_msgs.Odometry()
+    tf_msg.header.stamp.secs = 0
+    tf_msg.header.stamp.nsecs = 1
+    tf_msg.header.frame_id = "world_frame"
+    tf_msg.child_frame_id = "vo"
+    tf_msg.twist.twist.linear.x = 0.0
+    tf_msg.twist.twist.linear.y = 0.0
+    tf_msg.twist.twist.linear.z = 0.0
+    tf_msg.twist.twist.angular.x = 0.0
+    tf_msg.twist.twist.angular.y = 0.0
+    tf_msg.twist.twist.angular.z = 0.0
+    tf_msg.twist.covariance = STANDARD_COVARIANCE
+    tf_msg.pose.pose.position.x = 0.0
+    tf_msg.pose.pose.position.y = 0.0
+    tf_msg.pose.pose.position.z = 0.0
+    quat = tf_convert.quaternion_from_euler(0, 0, 0)
+    tf_msg.pose.pose.orientation.x = quat[0]
+    tf_msg.pose.pose.orientation.y = quat[1]
+    tf_msg.pose.pose.orientation.z = quat[2]
+    tf_msg.pose.pose.orientation.w = quat[3]
+    tf_msg.pose.covariance = STANDARD_COVARIANCE
+    transform_pub.publish(tf_msg)
+
+    rospy.wait_for_service('/input_display')
+    #simulation_time_client.wait_for_service()
 
     # find the range by matching start and end image index
     start_index = ''
     end_index = ''
     for i, filename in enumerate(filenames):
-        print(f"Vision: filename: {filename}")
-        print(f"Vision: filetype: {type(filename)}")
         image_number = int(filename.split('saved_image_')[-1].split('.png')[0])
         if image_number == start_image:
             start_index = i
@@ -107,11 +130,11 @@ def vision_pub(filenames, paths, timestamps, offsets):
 
     # Start the image stitcher with the same path as the images loaded in the vision node
     request = Display_inputRequest()
-    request.path = filenames # Path must contain json file and images
+    request.path = image_folder_path # Path must contain json file and images
     request.start_image = start_image # first image number
     request.amount_of_images = end_image - start_image # number of images (max ~60)
 
-    print("Thread 1: Sending images to the simulation\n")
+    print("Vision: Sending images to the simulation\n")
     image_stitch = rospy.ServiceProxy('/input_display', Display_input)
     image_stitch.call(request)
 
@@ -119,18 +142,19 @@ def vision_pub(filenames, paths, timestamps, offsets):
     for i in range(start_index, end_index):
         # Fetch trajectory
         path = paths[i]
-        timestap = timestamps[i]
-        angle, traveled_x, traveled_y = offsets[i, 2]
+        timestamp = timestamps[i]
+        angle, traveled_x, traveled_y = offsets[i]
 
         # Wait for webots timing
         previous_time = simulation_time_client.call(True)
         previous_time = previous_time.value
         if type(vehicle_speed) == str:
             # Wait to get first image for as long as the arduino recorded
-            curr_time = simulation_time_client.call(True)
-            while curr_time.value > previous_time + timestap[i]/1000:
+            curr_time = simulation_time_client.call(True) # TODO: FIX THE TIME UPDATE HERE LMAO :))))))))))))))))))))))))  
+            while curr_time.value > previous_time + timestamp/1000:
                 time.sleep(0.1)
-            previous_time = curr_time.value + timestap[i]/1000
+            previous_time = curr_time.value + timestamp/1000
+            print('yo')
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
             time_to_next_image = offsets[i+1, 1] / vehicle_speed  #THIS MAY FUCK UP AND MAKE THE TIME TO WAIT VERY SHORT IF IT DOES CHANGE INDEX TO 2
@@ -142,6 +166,7 @@ def vision_pub(filenames, paths, timestamps, offsets):
 
         # Get timestamp for tf
         secs = simulation_time_client.call(True).value
+        print(f"Vision: Timestamp = {secs}")
 
         # Calculate world pose
         world_pose_x += traveled_x * PIXEL_SIZE
@@ -152,9 +177,14 @@ def vision_pub(filenames, paths, timestamps, offsets):
         traveled_x_base, traveled_y_base = transform_coordinates(traveled_x, traveled_y, transform_camera_to_base)
         world_pose_x_base, world_pose_y_base = transform_coordinates(world_pose_x, world_pose_y, transform_camera_to_base)
 
+        # Convert from seconds (float) to seconds and nanoseconds
+        nanoseconds = int(secs*1e9%1e9)
+        seconds = int(secs*1e9//1e9)
+
         # Publish transform from camera
         tf_msg = nav_msgs.Odometry()
-        tf_msg.header.stamp.from_sec(secs)
+        tf_msg.header.stamp.secs = seconds
+        tf_msg.header.stamp.nsecs = nanoseconds
         tf_msg.header.frame_id = "world_frame"
         tf_msg.child_frame_id = "vo"
 
@@ -181,22 +211,21 @@ def vision_pub(filenames, paths, timestamps, offsets):
         transform_pub.publish(tf_msg)
 
         #DEBUG
-        print("Vision sent a transform to tf\n")
+        print(f"Vision sent a transform to tf, timestamp: {seconds}.{nanoseconds}\n")
 
-        while(not tf_buffer.can_transform('world_frame', 'camera_frame')):
-            print("vision waiting for transform")
-            time.sleep(1)
-
+        #while(not tf_buffer.can_transform('world_frame', 'camera_frame', rospy.Time(seconds, nanoseconds))):
+        #    print("vision waiting for transform")
+        #    time.sleep(1)
         # Get transform from camera to world for current image
         try:
-            transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time.from_sec(secs))
-
+            transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time(seconds, nanoseconds))
             # Send each point in crack trajectory
             for point in path:
                 # geometry_msgs PointStamped Message
                 message = geo_msgs.PointStamped()
                 message.header.frame_id = "world_frame"
-                message.header.stamp.from_sec(secs)
+                message.header.stamp.secs = seconds
+                message.header.stamp.nsecs = nanoseconds
                 coords = transform_coordinates(point[0] * PIXEL_SIZE, point[1] * PIXEL_SIZE, transform_camera_to_world.transform)
                 message.point.x = coords[0]
                 message.point.y = coords[1]
@@ -215,6 +244,7 @@ def vision_pub(filenames, paths, timestamps, offsets):
 if __name__ == "__main__":
     rospy.init_node('vision_publisher')
 
+
     # load pickle file
     image_path = rospy.get_param("~Image_path")
     with open(f'{image_path}/vision_output.pkl', 'rb') as f:
@@ -223,4 +253,4 @@ if __name__ == "__main__":
         timestamps_from_pkl = pickle.load(f)  # list of milliseconds
         offsets_from_pkl = pickle.load(f)     # list of (angle, traveled_x, traveled_y)
 
-    vision_pub(filenames_from_pkl, paths_from_pkl, timestamps_from_pkl, offsets_from_pkl)
+    vision_pub(filenames_from_pkl, paths_from_pkl, timestamps_from_pkl, offsets_from_pkl, image_path)
