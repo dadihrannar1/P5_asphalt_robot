@@ -14,7 +14,6 @@ from trajectory_planning import Crack, Frame, map_cracks, process_image
 import atexit
 import pickle
 import json
-import tqdm
 from vision.srv import Display_input, Display_inputRequest
 
 # Camera source (0 for webcam)
@@ -42,7 +41,7 @@ if __name__ == "__main__":
     rospy.init_node('vision_frame', anonymous=True)
 
     # Load trained model ffrom specifed path
-    model = load_model(str(current_path) + '/' + model_name)
+    model = load_model("/media/sf_shared_files" + '/' + model_name)
 
     # Transforms
     detect_transform = albumentations.Compose([
@@ -150,12 +149,20 @@ if __name__ == "__main__":
         old_frame = copy.copy(frame1)
 
         print(f"vision_node: {filename} saved")
-        filenames.append(frame1.path)
-        paths.append(arduino_timestamp[i])
-        timestamps.append((angle, traveled_x, traveled_y))
-        offsets.append(filename)
+        filenames.append(filename)
+        paths.append(frame1.path)
+        timestamps.append(arduino_timestamp[i])
+        offsets.append((angle, traveled_x, traveled_y))
         pkl_data = [filenames, paths, timestamps, offsets]
 
     with open(f'{image_path}/vision_output.pkl', 'wb') as f:
-        pickle.dump(pkl_data, f)
+        # Dumping files in order 
+        # 1: Filenames
+        # 2: Paths 
+        # 3: Timestamps
+        # 4: Offsets
+        pickle.dump(pkl_data[0], f)
+        pickle.dump(pkl_data[1], f)
+        pickle.dump(pkl_data[2], f)
+        pickle.dump(pkl_data[3], f)
     print(f'Saved to {image_path}')

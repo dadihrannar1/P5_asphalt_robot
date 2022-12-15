@@ -95,7 +95,9 @@ def vision_pub(filenames, paths, timestamps, offsets):
     start_index = ''
     end_index = ''
     for i, filename in enumerate(filenames):
-        image_number = int(filename.split('saved_image_')[0].split('.png')[0])
+        print(f"Vision: filename: {filename}")
+        print(f"Vision: filetype: {type(filename)}")
+        image_number = int(filename.split('saved_image_')[-1].split('.png')[0])
         if image_number == start_image:
             start_index = i
         if image_number == end_image:
@@ -216,10 +218,9 @@ if __name__ == "__main__":
     # load pickle file
     image_path = rospy.get_param("~Image_path")
     with open(f'{image_path}/vision_output.pkl', 'rb') as f:
-        vision_output = pickle.load(f)
+        filenames_from_pkl = pickle.load(f)   # list of image numbers
+        paths_from_pkl = pickle.load(f)       # list of paths (list of points)
+        timestamps_from_pkl = pickle.load(f)  # list of milliseconds
+        offsets_from_pkl = pickle.load(f)     # list of (angle, traveled_x, traveled_y)
 
-    filenames_from_pkl = vision_output[0]# list of image numbers
-    paths_from_pkl = vision_output[1]       # list of paths (list of points)
-    timestamps_from_pkl = vision_output[2]  # list of milliseconds
-    offsets_from_pkl = vision_output[3]     # list of (angle, traveled_x, traveled_y)
     vision_pub(filenames_from_pkl, paths_from_pkl, timestamps_from_pkl, offsets_from_pkl)
