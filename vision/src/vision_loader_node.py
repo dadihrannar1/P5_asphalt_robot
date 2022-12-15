@@ -82,6 +82,7 @@ def vision_pub(paths, timestamps, offsets):
                            0, 0, 0, 0, 1.9074e-05, 0,
                            0, 0, 0, 0, 0, 1.9074e-05]
 
+    simulation_time_client.wait_for_service()
     print('Started vision_pub')
     for i in range(len(paths)):
         # Fetch trajectory
