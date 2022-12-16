@@ -14,6 +14,8 @@ from trajectory_planning import Crack, Frame, map_cracks, process_image
 import atexit
 import pickle
 import json
+import math
+import random
 from vision.srv import Display_input, Display_inputRequest
 
 # Camera source (0 for webcam)
@@ -36,6 +38,43 @@ def shutoff_savedata(data, file_path):
     with open(file_path, 'wb') as f:
         pickle.dump(data, f)
     sys.exit()
+
+#Visualise cracks for debugging
+def visualize(frame: Frame, p1, offset):
+    blank_image = np.zeros((WIDTH,HEIGHT,3), np.uint8)
+    
+    shifts = 0
+
+    for crack in frame.raw_cracks:
+        cords = crack.get_coordinates()
+        for i in range(0,len(cords)-1):
+            x, y = cords[i][0], cords[i][1]
+            x1, y1 = cords[i+1][0], cords[i+1][1]
+            cv2.line(blank_image, (x, y), (x1, y1), (0, 0, 255), thickness=2, lineType=4)
+            
+    for i in range(0,len(p1)-1):
+        x, y = p1[i][0], p1[i][1]
+        x1, y1 = p1[i+1][0], p1[i+1][1]
+       # print(p.path[i])
+        n = i/255
+        n = math.floor(n)
+        if ((n%2) == 0):
+            color = i%255
+        else:
+            color = 255 - (i%255)
+        #print(p.path[i][2],p.path[i+1][2])
+        if (p1[i][2] and p1[i+1][2]):
+            shifts += 1
+            cv2.line(blank_image, (x, y), (x1, y1), (random.randint(100,255), random.randint(0,25),random.randint(0,255)), thickness=1, lineType=8)
+            center = [math.floor(x+((x1-x)/2)), math.floor(y + ((y1-y)/2))]
+            cv2.putText(blank_image, str(shifts),(center[0],center[1]),cv2.FONT_HERSHEY_SIMPLEX,0.4,(0, 255, 0))
+            #print("Shift")
+        else:
+            cv2.line(blank_image, (x, y), (x1, y1), (255, 255, 255), thickness=2, lineType=8)
+
+        #cv2.line(blank_image, (0, math.floor(offset)), (WIDTH, math.floor(offset)), (0, 255, 255), thickness=1, lineType=8)
+        
+    return blank_image
 
 if __name__ == "__main__":
     rospy.init_node('vision_frame', anonymous=True)
@@ -110,37 +149,50 @@ if __name__ == "__main__":
         arduino_time_differences.append(arduino_timestamp[i] - arduino_timestamp[i-1])
 
     print('Started processing images')
-    for i, filename in enumerate(filename[start_image:end_image]):
+    for filename, arduino_time_difference in zip(filename[start_image:end_image], arduino_time_differences[start_image:end_image]):
         frame = cv2.imread(image_path + "/" + filename)
 
         # Undistort image, followed by rotation and cropping
         frame_corrected = cv2.remap(frame, map_x, map_y, cv2.INTER_LINEAR)
-        frame_rotated = cv2.rotate(frame_corrected, cv2.ROTATE_90_CLOCKWISE)
-        # Crop image to remove trailer edges
-        frame_cropped = frame_rotated[100:1720, 100:980]
+        frame_cropped = frame_corrected[100:980, 100:1720]
+        frame_rotated = cv2.rotate(frame_cropped, cv2.ROTATE_90_CLOCKWISE)
+
+        # DEBUG Display resized image
+        #height, width = frame_rotated.shape[:2]
+        #frame_show = cv2.resize(frame_rotated, (width//2, height//2))
+        #cv2.imshow('image', frame_show)
+        #cv2.waitKey(10)
+
 
         # Determine odometry from images
         if img_raw_old.any():
-            new_image = cv2.resize(frame_cropped,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
+            new_image = cv2.resize(frame_rotated,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
             new_image = cv2.cvtColor(new_image,cv2.COLOR_BGR2GRAY)
             
             angle, traveled_x, traveled_y = image_aligner.visual_odometry(img_raw_old, new_image)
 
         # Save image for odometry calculation
-        img_raw_old = np.copy(frame_cropped)
+        img_raw_old = np.copy(frame_rotated)
         img_raw_old = cv2.resize(img_raw_old,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
         img_raw_old = cv2.cvtColor(img_raw_old,cv2.COLOR_BGR2GRAY)
 
         # Use UNET to detect cracks
-        augmentented = detect_transform(image=frame_cropped)
+        augmentented = detect_transform(image=frame_corrected)
         data = augmentented["image"].to(device=DEVICE)
         data = torch.unsqueeze(data, 0)
         output = torch.sigmoid(model(data))
         output = torch.squeeze(output)
         preds = (output > 0.5).float()
+        predictions_cropped = preds.cpu().numpy()[100:980, 100:1720]    # Crop image to remove trailer edges
+        predictions_rotated = cv2.rotate(predictions_cropped, cv2.ROTATE_90_CLOCKWISE)  # Rotate
+
+        #DEBUG show predictions
+        #cv2.imshow('imageprediction', predictions_rotated)
+        #cv2.waitKey(10)
 
         #
-        sorted_cracks = process_image(preds.cpu().numpy())
+        sorted_cracks = process_image(predictions_rotated)
+
         frame1 = Frame()
         for crack in sorted_cracks:
             frame1.add_crack(Crack(crack))
@@ -153,10 +205,14 @@ if __name__ == "__main__":
         frame1.find_path()
         old_frame = copy.copy(frame1)
 
+        frame0Vis = visualize(frame1, frame1.path, traveled_x)
+        cv2.imshow("crack visualisation", frame0Vis)
+        cv2.waitKey(10)
+
         print(f"vision_node: {filename} saved")
         filenames.append(filename)
         paths.append(frame1.path)
-        timestamps.append(arduino_time_differences)
+        timestamps.append(arduino_time_difference)
         offsets.append((angle, traveled_x, traveled_y))
         pkl_data = [filenames, paths, timestamps, offsets]
 
