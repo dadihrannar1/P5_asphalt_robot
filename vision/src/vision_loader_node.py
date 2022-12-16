@@ -112,6 +112,8 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     tf_msg.pose.pose.orientation.w = quat[3]
     tf_msg.pose.covariance = STANDARD_COVARIANCE
     transform_pub.publish(tf_msg)
+    #tf_msg.header.stamp.secs = 1
+    #transform_pub.publish(tf_msg)
 
     rospy.wait_for_service('/input_display')
     #simulation_time_client.wait_for_service()
@@ -148,6 +150,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         # Wait for webots timing
         previous_time = simulation_time_client.call(True).value
         #previous_time = previous_time.value
+        print(f"Vision: Timestamp after waiting = {previous_time}")
         if type(vehicle_speed) == str:
             # Wait to get first image for as long as the arduino recorded
             #curr_time = simulation_time_client.call(True) # TODO: FIX THE TIME UPDATE HERE LMAO :))))))))))))))))))))))))  
@@ -169,7 +172,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
 
         # Get timestamp for tf
         secs = simulation_time_client.call(True).value
-        print(f"Vision: Timestamp = {secs}")
+        print(f"Vision: Timestamp after waiting = {secs}")
 
         # Calculate world pose
         world_pose_x += traveled_x * PIXEL_SIZE
