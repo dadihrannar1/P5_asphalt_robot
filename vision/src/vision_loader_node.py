@@ -51,7 +51,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     point_pub = rospy.Publisher('/points', geo_msgs.PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
     vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
-    simulation_time_client = rospy.ServiceProxy(f"/fivebarTrailer/robot/get_time", get_float)
+    simulation_time_client = rospy.ServiceProxy("/fivebarTrailer/robot/get_time", get_float)
 
     start_image = rospy.get_param("~Start_image")
     end_image = rospy.get_param("~End_image")
@@ -146,21 +146,24 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         angle, traveled_x, traveled_y = offsets[i]
 
         # Wait for webots timing
-        previous_time = simulation_time_client.call(True)
-        previous_time = previous_time.value
+        previous_time = simulation_time_client.call(True).value
+        #previous_time = previous_time.value
         if type(vehicle_speed) == str:
             # Wait to get first image for as long as the arduino recorded
-            curr_time = simulation_time_client.call(True) # TODO: FIX THE TIME UPDATE HERE LMAO :))))))))))))))))))))))))  
-            while curr_time.value > previous_time + timestamp/1000:
+            #curr_time = simulation_time_client.call(True) # TODO: FIX THE TIME UPDATE HERE LMAO :))))))))))))))))))))))))  
+            while simulation_time_client.call(True).value > previous_time + timestamp/1000:
+                #curr_time = simulation_time_client.call(True)
                 time.sleep(0.1)
-            previous_time = curr_time.value + timestamp/1000
-            print('yo')
+                print("Vision: Waiting...")
+            previous_time = simulation_time_client.call(True).value + timestamp/1000
+            print("Vision: Done waiting\n--------------------------------\n")
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
             time_to_next_image = offsets[i+1, 1] / vehicle_speed  #THIS MAY FUCK UP AND MAKE THE TIME TO WAIT VERY SHORT IF IT DOES CHANGE INDEX TO 2
             
             # Wait to get first image for as long as the vehicle velocity demands
             while simulation_time_client.call(True).value > previous_time + time_to_next_image:
+                #curr_time = simulation_time_client.call(True)
                 time.sleep(0.1)
             previous_time = simulation_time_client.call(True).value + time_to_next_image
 
