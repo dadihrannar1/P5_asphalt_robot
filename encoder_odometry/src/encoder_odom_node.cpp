@@ -267,33 +267,25 @@ int main(int argc, char** argv){
         }
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
-            while(true){
-                
-                if(time_client.call(time_request)){
-                    float current_time = time_request.response.value;
-                    if(current_time > previous_time + recorded_data.time[i]/1000){
-                        previous_time = current_time;
-                        break;
-                    }
-                    sleep(0.1);
-                }else{exit(69);} //Did not get an answer
+            std::cout << "Encoder: Start waiting, time is = " << time_request.response << "\n";
+            std::cout << "Encoder: Waiting for: " << float(recorded_data.time[i])/1000 << "\n";
+            while(time_request.response.value < previous_time + float(recorded_data.time[i])/1000){
+                time_client.call(time_request);
+                sleep(0.1);
             }
+            previous_time = time_request.response.value;
+            std::cout << "Encoder: done waiting, time is = " << previous_time << "\n";
         }
         else{
             //calculate wait time
-            float time_to_next_encoder_tick = (recorded_data.encoder1[i+1] * 0.38*M_PI/100) / vehicle_speed; //This may overflow at the last encoder increments
+            float time_to_next_encoder_tick = (float(recorded_data.encoder1[i+1]) * 0.38*M_PI/100) / vehicle_speed; //This may overflow at the last encoder increments
 
             //Wait until calculated time
-            while(true){
-                if(time_client.call(time_request)){
-                    float current_time = time_request.response.value;
-                    if(current_time > previous_time + time_to_next_encoder_tick/1000){
-                        previous_time = current_time;
-                        break;
-                    }
-                    sleep(0.1);
-                }else{exit(69);} //Did not get an answer
+            while(time_request.response.value < previous_time + time_to_next_encoder_tick/1000){
+                time_client.call(time_request);
+                sleep(0.1);
             }
+            previous_time = time_request.response.value;
         }
         
         

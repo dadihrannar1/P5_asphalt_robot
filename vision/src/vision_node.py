@@ -104,6 +104,11 @@ if __name__ == "__main__":
         encoder1 = [int(s) for s in data[2]]
         encoder2 = [int(s) for s in data[3]]
 
+    arduino_time_differences = []
+    arduino_time_differences.append(arduino_timestamp[0])
+    for i in range(1,len(arduino_timestamp)):
+        arduino_time_differences.append(arduino_timestamp[i] - arduino_timestamp[i-1])
+
     print('Started processing images')
     for i, filename in enumerate(filename[start_image:end_image]):
         frame = cv2.imread(image_path + "/" + filename)
@@ -151,7 +156,7 @@ if __name__ == "__main__":
         print(f"vision_node: {filename} saved")
         filenames.append(filename)
         paths.append(frame1.path)
-        timestamps.append(arduino_timestamp[i])
+        timestamps.append(arduino_time_differences)
         offsets.append((angle, traveled_x, traveled_y))
         pkl_data = [filenames, paths, timestamps, offsets]
 
