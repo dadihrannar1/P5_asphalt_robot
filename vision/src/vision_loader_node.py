@@ -150,16 +150,17 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         # Wait for webots timing
         previous_time = simulation_time_client.call(True).value
         #previous_time = previous_time.value
-        print(f"Vision: Timestamp after waiting = {previous_time}")
+        print(f"Vision: Timestamp before waiting = {previous_time}")
         if type(vehicle_speed) == str:
             # Wait to get first image for as long as the arduino recorded
-            #curr_time = simulation_time_client.call(True) # TODO: FIX THE TIME UPDATE HERE LMAO :))))))))))))))))))))))))  
+            #curr_time = simulation_time_client.call(True) # TODO: FIX THE TIME UPDATE HERE LMAO :))))))))))))))))))))))))
+            print(f"Vision: Time to wait = {timestamp/1000}seconds")
             while simulation_time_client.call(True).value > previous_time + timestamp/1000:
                 #curr_time = simulation_time_client.call(True)
                 time.sleep(0.1)
                 print("Vision: Waiting...")
             previous_time = simulation_time_client.call(True).value + timestamp/1000
-            print("Vision: Done waiting\n--------------------------------\n")
+            print("Vision: Done waiting")
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
             time_to_next_image = offsets[i+1, 1] / vehicle_speed  #THIS MAY FUCK UP AND MAKE THE TIME TO WAIT VERY SHORT IF IT DOES CHANGE INDEX TO 2
@@ -172,7 +173,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
 
         # Get timestamp for tf
         secs = simulation_time_client.call(True).value
-        print(f"Vision: Timestamp after waiting = {secs}")
+        print(f"Vision: Timestamp after waiting = {secs}\n--------------------------------\n")
 
         # Calculate world pose
         world_pose_x += traveled_x * PIXEL_SIZE
