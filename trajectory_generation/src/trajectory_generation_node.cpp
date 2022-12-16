@@ -30,7 +30,7 @@ struct TrajectoryCombinedPoly{
 
 class CrackMapper{
 private:
-  ros::NodeHandle n;
+  ros::NodeHandle n_;
   ros::Subscriber point_sub;
   tf2_ros::Buffer tf2_buffer;
   tf2_ros::TransformListener tf2_listener;
@@ -69,14 +69,16 @@ private:
   }
 
 public:
-  CrackMapper():
+  CrackMapper(ros::NodeHandle& n): n_(n), 
   tf2_buffer(ros::Duration(600)), tf2_listener(tf2_buffer){
-    point_sub = n.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
+    std::cout << "Trajectory subscribing to crackmapper" << "\n";
+    point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
   }
 
   std::deque<TrajectoryCombinedPoly> generate_trajectory(float vehicle_speed){
     //List of current coordinates in robot coordinates
     std::deque<geometry_msgs::PointStamped> robot_trajectory_coordinates;
+    std::cout << "Trajectory: Created coordinate deque" << "\n";
 
     //Transform coordinates from world coordinates to robot coordinates
     for(int i = 0; i < world_trajectory_coordinates.size(); i++){
@@ -99,15 +101,24 @@ public:
         //TODO: What if the coordinate is already fixed? How do we remove them from the world trajectory?
       }
     }
+    std::cout << "Trajectory: Finished populating deque with points" << "\n";
 
     //List of current trajectories in robot coordinates
-    std::deque<TrajectoryCombinedPoly> full_combined_trajectory;
+    std::deque<TrajectoryCombinedPoly> full_combined_trajectory = {};
+    
+    // In case there are not enough points return
+    if(robot_trajectory_coordinates.size() < 2){
+      return full_combined_trajectory;
+    }
+
     float start_x_velocity = 0;
+    
     float start_y_velocity = 0;
 
     //Keeping track of the movements in the y direction
     float total_travel_time = 0;
 
+    std::cout << "Trajectory: generate coordinate pairs" << "\n";
     //Generate polynomial between all the points in robot frame
     for(int i = 0; i < robot_trajectory_coordinates.size()-1; i++){
       geometry_msgs::PointStamped coordinate_1 = robot_trajectory_coordinates.at(i);
@@ -137,6 +148,7 @@ public:
           end_x_velocity = 0;
         }
       }
+      std::cout << "Trajectory: Generate trajectory between points" << "\n";
       //Polynomial for x movements
       TrajectoryPolynomial x_polynomial = generate_polynomial(coordinate_1.point.x, coordinate_2.point.x, start_x_velocity, end_x_velocity, travel_time);
       start_x_velocity = end_x_velocity;
@@ -187,7 +199,6 @@ float adjust_speed(){
 
 //Thread function for following trajectory
 void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle n, int step_size){
-
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
   new_controller::set_pos motorSrv; // This is the message for the motor node
 
@@ -231,9 +242,10 @@ int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
   ros::NodeHandle n;
   ros::Publisher vehicle_vel_pub = n.advertise<std_msgs::Float64>("/vehicle_speed", 10);
-  ros::topic::waitForMessage<geometry_msgs::PointStamped>("/points");
+  ros::service::waitForService("/fivebarTrailer/robot/get_time");
+  //ros::topic::waitForMessage<geometry_msgs::PointStamped>("/points");
 
-  CrackMapper trajectory_mapper;
+  CrackMapper trajectory_mapper(n);
 
   //trajectory service frequency
   float srv_hz = 100;

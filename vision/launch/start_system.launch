@@ -17,31 +17,31 @@
     <!--node name="display_test" pkg="new_controller" type="display_test" required="$(arg auto_close)"/-->
 
     <!-- static transforms-->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_transform" args=" 0.067 -0.42665 0 0 0 0 base_link camera_frame" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_robot_transform"  args="-0.665 -0.088   0 0 0 1.57079632679489661923 base_link robot_frame" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_transform" args=" 0.0584708 -0.3381208 0 1.57079632679489661923 0 3.1415926536 base_link camera_frame" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_robot_transform"  args="-0.665 -0.088 0 1.57079632679489661923 0 0  base_link robot_frame" />
    
     <!-- EKF -->
 
     <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf" >
     <param name="output_frame" value="world_frame"/>
     <param name="base_footprint_frame" value="base_link"/>
-    <param name="freq" value="10"/>
-    <param name="sensor_timeout" value="1.0"/>
+    <param name="freq" value="100"/>
+    <param name="sensor_timeout" value="50.0"/>
     <param name="odom_used" value="true"/>
     <param name="imu_used" value="false"/>
     <param name="vo_used" value="true"/>
     <param name="gps_used" value="false"/>
     <param name="debug" value="true"/>
     <param name="self_diagnose" value="true"/>
-
+    
     </node>
     <!-- Remapping ekf to base_link as the estimated frame -->
     <remap from="/odom_combined" to="/base_link"/>
 
     <!-- arguments -->
-    <arg name="Image_path_arg" default="absolute image path" />
-    <arg name="Start_image_arg" default="1"/>
-    <arg name="Amount_of_images_arg" default="20"/> <!--Max 50-->
+    <arg name="Image_path_arg" default="(find vision)" doc="absolute image path"/>
+    <arg name="Start_image_arg" default="1" doc="first image number in the image folder"/>
+    <arg name="End_image_arg" default="20" doc="Last image, max around 50"/> <!--Max 50-->
     <!-- vision -->
     
     <node name="vision_node" pkg="vision" type="vision_loader_node.py" output="screen" args="--wait-for-param /Image_path"> 

@@ -2,6 +2,7 @@
 import json
 import cv2
 import pickle
+import time
 from pathlib import Path
 
 
@@ -172,6 +173,7 @@ class DisplayService(object):
         left = (self.desired_w - w) // 2
         right = self.desired_w - w - left
         # Add a black border so that it has the right size
+        
         bordered_image = cv2.copyMakeBorder(result, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(0,0,0))
 
         # Write out the results and save the image
@@ -230,6 +232,7 @@ class DisplayService(object):
 rospy.init_node('webots_display')
 # Wait for the simulation controller.
 rospy.wait_for_service("/fivebarTrailer/robot/time_step")
+time.sleep(0.1)
 
 display = DisplayService()
 rospy.spin()
