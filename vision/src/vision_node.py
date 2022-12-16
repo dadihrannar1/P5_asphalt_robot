@@ -166,14 +166,14 @@ if __name__ == "__main__":
 
         # Determine odometry from images
         if img_raw_old.any():
-            new_image = cv2.resize(frame_rotated,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
+            new_image = cv2.resize(frame_rotated,(HEIGHT,WIDTH),interpolation=cv2.INTER_AREA)
             new_image = cv2.cvtColor(new_image,cv2.COLOR_BGR2GRAY)
             
             angle, traveled_x, traveled_y = image_aligner.visual_odometry(img_raw_old, new_image)
 
         # Save image for odometry calculation
         img_raw_old = np.copy(frame_rotated)
-        img_raw_old = cv2.resize(img_raw_old,(WIDTH,HEIGHT),interpolation=cv2.INTER_AREA)
+        img_raw_old = cv2.resize(img_raw_old,(HEIGHT,WIDTH),interpolation=cv2.INTER_AREA)
         img_raw_old = cv2.cvtColor(img_raw_old,cv2.COLOR_BGR2GRAY)
 
         # Use UNET to detect cracks
