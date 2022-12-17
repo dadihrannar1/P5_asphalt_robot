@@ -11,15 +11,10 @@ __pycache__/
 *.png
 *.jpg
 
+# Ignore build files
+build/**
+
 trajectory_generation/src/Test_Kinematics.py
-
-# Ignore webots in progress files
-*.wbproj
-
-#ignore videos
-*.MP4
-#ignore
-*.json
 
 # Ignore webots in progress files
 *.wbproj
