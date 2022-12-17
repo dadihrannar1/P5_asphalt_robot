@@ -84,9 +84,8 @@ class Crack:
 
 #TODO this class should be cleaned up
 class Frame():
-    # Pixel on the y-axis where the next frame begins
-    next_frame = 480
-    
+    next_frame = 1620 #TODO get this to adjust according to the translation along x
+
     KEEP_EVERY_X_PIXEL = 3
     # all cracks done
     cracks_done = False
