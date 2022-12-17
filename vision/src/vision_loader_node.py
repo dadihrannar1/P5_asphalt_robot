@@ -60,21 +60,21 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     if(end_image<start_image):
         exit("Vision_node: Invalid launch input end<start")
 
-    r = rospy.Rate(100)  # 100hz used for sending coordinates
+    r = rospy.Rate(10000)  # 100hz used for sending coordinates
 
     # Transform listener for getting transforms from TF
-    tf_buffer = tf2_ros.Buffer(rospy.Time(100))
+    tf_buffer = tf2_ros.Buffer(rospy.Time(10000))
     tf_listener = tf2_ros.TransformListener(tf_buffer)
 
     # Transform from camera to base (must be the inverse of base_to_camera_transform)
     transform_camera_to_base = geo_msgs.Transform()
-    transform_camera_to_base.translation.x = -0.067
-    transform_camera_to_base.translation.y = 0.42665
+    transform_camera_to_base.translation.x = -0.3381208
+    transform_camera_to_base.translation.y = -0.0584708
     transform_camera_to_base.translation.z = 0
-    transform_camera_to_base.rotation.x = 0
-    transform_camera_to_base.rotation.y = 0
+    transform_camera_to_base.rotation.x = 0.7071068
+    transform_camera_to_base.rotation.y = 0.7071068
     transform_camera_to_base.rotation.z = 0
-    transform_camera_to_base.rotation.w = 1
+    transform_camera_to_base.rotation.w = 0
 
     world_pose_x = 0
     world_pose_y = 0
@@ -112,8 +112,8 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     tf_msg.pose.pose.orientation.w = quat[3]
     tf_msg.pose.covariance = STANDARD_COVARIANCE
     transform_pub.publish(tf_msg)
-    #tf_msg.header.stamp.secs = 1
-    #transform_pub.publish(tf_msg)
+    tf_msg.header.stamp.secs = 1
+    transform_pub.publish(tf_msg)
 
     rospy.wait_for_service('/input_display')
     #simulation_time_client.wait_for_service()
@@ -135,6 +135,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     request.path = image_folder_path # Path must contain json file and images
     request.start_image = start_image # first image number
     request.amount_of_images = end_image - start_image # number of images (max ~60)
+    #print(request.path,request.start_image,request.amount_of_images)
 
     print("Vision: Sending images to the simulation\n")
     image_stitch = rospy.ServiceProxy('/input_display', Display_input)
@@ -145,16 +146,15 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         # Fetch trajectory
         path = paths[i]
         timestamp = timestamps[i]
-        angle, traveled_x, traveled_y = offsets[i]
+        angle, traveled_x, traveled_y = offsets[i]  # swapped x and y to move in right direction TODO: make this change earlier in the pipeline
         print(f"Vision: Timestamp {timestamp}milliseconds")
 
         # Wait for webots timing
         previous_time = simulation_time_client.call(True).value
-        #previous_time = previous_time.value
-        print(f"Vision: Time before waiting = {previous_time}")
+        #rint(f"Vision: Time before waiting = {previous_time}")
         if type(vehicle_speed) == str:
             # Wait to get first image for as long as the arduino recorded
-            print(f"Vision: Time to wait = {timestamp/1000}seconds")
+            #print(f"Vision: Time to wait = {timestamp/1000}seconds")
             while simulation_time_client.call(True).value < previous_time + timestamp/1000:
                 #curr_time = simulation_time_client.call(True)
                 time.sleep(0.1)
@@ -171,7 +171,9 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
 
         # Get timestamp for tf
         secs = simulation_time_client.call(True).value
-        print(f"Vision: Time after waiting = {secs}\n--------------------------------\n")
+        #print(f"Vision: Time after waiting = {secs}\n--------------------------------\n")
+
+        #print(f"Vision: X_travel = {traveled_x}, Y_travel = {traveled_y}")
 
         # Calculate world pose
         world_pose_x += traveled_x * PIXEL_SIZE
@@ -192,6 +194,8 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         tf_msg.header.stamp.nsecs = nanoseconds
         tf_msg.header.frame_id = "world_frame"
         tf_msg.child_frame_id = "vo"
+
+        #print(f"Vision: X_travel = {traveled_x_base}, Y_travel = {traveled_y_base}")
 
         # Add twist
         tf_msg.twist.twist.linear.x = traveled_x_base
@@ -214,17 +218,23 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         tf_msg.pose.covariance = STANDARD_COVARIANCE
 
         transform_pub.publish(tf_msg)
-
+        rospy.sleep(0.1)
         #DEBUG
-        print(f"Vision sent a transform to tf, timestamp: {seconds}.{nanoseconds}\n")
+        print(f"Vision sent a transform to tf, timestamp: {seconds}.{nanoseconds}\n") # What if i just don't wait lmao
 
+        
+        # TODO: EKF is a few (1-2) transforms behind which causes extrapolation errors into the future
         #while(not tf_buffer.can_transform('world_frame', 'camera_frame', rospy.Time(seconds, nanoseconds))):
-        #    print("vision waiting for transform")
-        #    time.sleep(1)
+        #    #print("vision waiting for transform")
+        #    time.sleep(0.1)
+        #    pass
+
         # Get transform from camera to world for current image
+        print(f"Vision: Transform available")
         try:
             transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time(seconds, nanoseconds))
             # Send each point in crack trajectory
+            #print(f'path generated: {path}')
             for point in path:
                 # geometry_msgs PointStamped Message
                 message = geo_msgs.PointStamped()
@@ -235,9 +245,10 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
                 message.point.x = coords[0]
                 message.point.y = coords[1]
                 # Used for sending the end of crack information
-                message.point.z = point[2]
+                # message.point.z = point[2]
 
                 point_pub.publish(message)
+                #print(f"Vision: sent a point to /points")
                 r.sleep()
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as exception:
@@ -257,5 +268,4 @@ if __name__ == "__main__":
         paths_from_pkl = pickle.load(f)       # list of paths (list of points)
         timestamps_from_pkl = pickle.load(f)  # list of milliseconds
         offsets_from_pkl = pickle.load(f)     # list of (angle, traveled_x, traveled_y)
-
     vision_pub(filenames_from_pkl, paths_from_pkl, timestamps_from_pkl, offsets_from_pkl, image_path)

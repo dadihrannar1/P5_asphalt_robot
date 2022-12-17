@@ -11,6 +11,7 @@
 #include <webots_ros/get_float.h>
 #include <webots_ros/set_bool.h>
 #include <iostream>
+#include <cmath>
 
 const double WHEEL_DIAMETER = 0.38*M_PI;    //Wheel diameter
 const double ENCODER_TICKS = 100;           //Ticks per encoder revolution
@@ -63,7 +64,7 @@ FileData read_JSON(const std::string& filepath, const int from_increment, const 
             return_data.encoder2.push_back(read_data.encoder2.at(i));
             return_data.filenames.push_back(read_data.filenames.at(i));
             if(!i){return_data.time.push_back(read_data.time.at(i));} //First time should be kept as is
-            return_data.time.push_back(read_data.time.at(i)-read_data.time.at(i-1)); //only record time difference
+            else{return_data.time.push_back(read_data.time.at(i)-read_data.time.at(i-1));} //only record time difference
         }
         return return_data;
     }
@@ -216,6 +217,8 @@ int main(int argc, char** argv){
     
     //publish the message
     odom_pub.publish(odom);
+    odom.header.stamp.sec = 1;
+    odom_pub.publish(odom);
 
     //Create differential drive handler
     DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
@@ -267,14 +270,11 @@ int main(int argc, char** argv){
         }
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
-            std::cout << "Encoder: Start waiting, time is = " << time_request.response << "\n";
-            std::cout << "Encoder: Waiting for: " << float(recorded_data.time[i])/1000 << "\n";
             while(time_request.response.value < previous_time + float(recorded_data.time[i])/1000){
                 time_client.call(time_request);
                 sleep(0.1);
             }
             previous_time = time_request.response.value;
-            std::cout << "Encoder: done waiting, time is = " << previous_time << "\n";
         }
         else{
             //calculate wait time
@@ -288,13 +288,18 @@ int main(int argc, char** argv){
             previous_time = time_request.response.value;
         }
         
+        //Round timestamp to 3 digit precision
+        int seconds = int(std::round(previous_time));
+        int nanoseconds = int((previous_time - seconds)*1e3)*1e6;
+
         
         //Compute world coordinates
         ddr_position.get_new_transform(recorded_data.encoder1.at(i), recorded_data.encoder2.at(i)); //TODO read from JSON to get encoder ticks
 
         //Publish the odometry message over ROS
         nav_msgs::Odometry odom;
-        odom.header.stamp.fromSec(previous_time);
+        odom.header.stamp.sec = seconds;
+        odom.header.stamp.nsec = nanoseconds;
         odom.header.frame_id = "world_frame";
 
         //Set the position
