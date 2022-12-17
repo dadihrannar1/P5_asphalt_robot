@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   actionlib
   new_controller
+  #geometry_msgs
   #std_msgs
   #message_generation
 )

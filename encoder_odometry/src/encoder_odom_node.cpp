@@ -198,8 +198,8 @@ int main(int argc, char** argv){
 
     //Publish initial position to tf
     nav_msgs::Odometry odom;
-    odom.header.stamp.sec = 0;
-    odom.header.stamp.nsec = 1;
+    odom.header.stamp.sec = 1;
+    odom.header.stamp.nsec = 0000001;
     odom.header.frame_id = "world_frame";
     odom.pose.pose.position.x = 0.0;
     odom.pose.pose.position.y = 0.0;
@@ -216,8 +216,6 @@ int main(int argc, char** argv){
     odom.twist.covariance = STANDARD_TWIST_COVARIANCE;
     
     //publish the message
-    odom_pub.publish(odom);
-    odom.header.stamp.sec = 1;
     odom_pub.publish(odom);
 
     //Create differential drive handler
@@ -237,6 +235,9 @@ int main(int argc, char** argv){
     FileData recorded_data = read_JSON(json_path + "/image_details.json", from_image, to_image-from_image);
 
     ros::Rate r(100);
+
+    //Wait for ekf to launch
+    //ros::service::waitForService("robot_pose_ekf/get_status")
 
     //Service for timing with webots
     ros::service::waitForService("/fivebarTrailer/robot/get_time");
@@ -291,7 +292,6 @@ int main(int argc, char** argv){
         //Round timestamp to 3 digit precision
         int seconds = int(std::round(previous_time));
         int nanoseconds = int((previous_time - seconds)*1e3)*1e6;
-
         
         //Compute world coordinates
         ddr_position.get_new_transform(recorded_data.encoder1.at(i), recorded_data.encoder2.at(i)); //TODO read from JSON to get encoder ticks
@@ -300,6 +300,7 @@ int main(int argc, char** argv){
         nav_msgs::Odometry odom;
         odom.header.stamp.sec = seconds;
         odom.header.stamp.nsec = nanoseconds;
+        //std::cout << "Encoder stamp: sec " << odom.header.stamp.sec << ", nsec " << odom.header.stamp.nsec << "\n"; 
         odom.header.frame_id = "world_frame";
 
         //Set the position
@@ -318,11 +319,6 @@ int main(int argc, char** argv){
         
         //publish the message
         odom_pub.publish(odom);
-
-        //DEBUG
-        ros::Time time;
-        time.fromSec(previous_time);
-        std::cout << "encoder sent a transform to tf, timestamp: " << time << std::endl;
 
         r.sleep();
     }

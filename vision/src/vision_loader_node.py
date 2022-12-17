@@ -3,7 +3,9 @@ import numpy as np
 import rospy
 import tf2_ros
 import tf.transformations as tf_convert
-import geometry_msgs.msg as geo_msgs
+from geometry_msgs.msg import Transform
+from geometry_msgs.msg import PointStamped
+#import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
 from std_msgs.msg import Float64
 from webots_ros.srv import get_float
@@ -26,29 +28,24 @@ def angle_add(angle_1, angle_2):
         return angle_1 + angle_2
 
 # Function to transform a coordinate into world coordinates
-def transform_coordinates(x_coordinate, y_coordinate, transform: geo_msgs.Transform):
-    
-    if not isinstance(transform, geo_msgs.Transform):
-        raise TypeError
-    else:
-        # 4x4 transformation matrix from quaternion and translation
-        quaternion = np.array([transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w])
-        transformation = tf_convert.quaternion_matrix(quaternion)
-        transformation[0, 3] = transform.translation.x
-        transformation[1, 3] = transform.translation.y
-        transformation[2, 3] = transform.translation.z
+def transform_coordinates(x_coordinate, y_coordinate, transformation):
+    # Pre-allocate the point and result arrays
+    point = np.zeros((4, 1))
 
-        # Crack coordinate as pose
-        point = np.array([[x_coordinate], [y_coordinate], [0], [1]])
+    # Assign values to the point array
+    point[0, 0] = x_coordinate
+    point[1, 0] = y_coordinate
+    point[3, 0] = 1
 
-        # Transform coordinate
-        result = np.dot(transformation, point)
-        x = result[0, 0]
-        y = result[1, 0]
-        return x, y
+    # Transform the coordinate
+    result = np.dot(transformation, point)
+
+    # Unpack the result into x and y variables
+    x, y, _, _ = result
+    return x, y
 
 def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
-    point_pub = rospy.Publisher('/points', geo_msgs.PointStamped, queue_size=10)
+    point_pub = rospy.Publisher('/points', PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
     vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
     simulation_time_client = rospy.ServiceProxy("/fivebarTrailer/robot/get_time", get_float)
@@ -67,8 +64,8 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     tf_listener = tf2_ros.TransformListener(tf_buffer)
 
     # Transform from camera to base (must be the inverse of base_to_camera_transform)
-    transform_camera_to_base = geo_msgs.Transform()
-    transform_camera_to_base.translation.x = -0.3381208
+    transform_camera_to_base = Transform()
+    transform_camera_to_base.translation.x = 0.3381208
     transform_camera_to_base.translation.y = -0.0584708
     transform_camera_to_base.translation.z = 0
     transform_camera_to_base.rotation.x = 0.7071068
@@ -76,12 +73,22 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     transform_camera_to_base.rotation.z = 0
     transform_camera_to_base.rotation.w = 0
 
-    world_pose_x = 0
-    world_pose_y = 0
-    world_orientation = 0
+    quaternion = (transform_camera_to_base.rotation.x, transform_camera_to_base.rotation.y, transform_camera_to_base.rotation.z, transform_camera_to_base.rotation.w)
+    translation = (transform_camera_to_base.translation.x, transform_camera_to_base.translation.y, transform_camera_to_base.translation.z)
+    transform_camera_to_base_matrix = tf_convert.quaternion_matrix(quaternion)
+    transform_camera_to_base_matrix[:3, 3] = translation
+
+    camera_to_base_rotation_only = np.zeros((4,4))
+    camera_to_base_rotation_only[0:3, 0:3] = transform_camera_to_base_matrix[0:3, 0:3]
+    camera_to_base_rotation_only[3,3] = 1
+
+
+    world_pose_x = 0.0584708
+    world_pose_y = -0.3381208
+    world_orientation = 0.0
 
     # Scalar from pixels to distances in camera frame
-    PIXEL_SIZE = 0.0009712  # In meters
+    PIXEL_SIZE = 0.0008853   # In meters
     STANDARD_COVARIANCE = [1.9074e-05, 0, 0, 0, 0, 0,
                            0, 1.9074e-05, 0, 0, 0, 0,
                            0, 0, 1.9074e-05, 0, 0, 0,
@@ -91,8 +98,8 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
 
     # Publish initial position to tf
     tf_msg = nav_msgs.Odometry()
-    tf_msg.header.stamp.secs = 0
-    tf_msg.header.stamp.nsecs = 1
+    tf_msg.header.stamp.secs = 1
+    tf_msg.header.stamp.nsecs = int(00000000)
     tf_msg.header.frame_id = "world_frame"
     tf_msg.child_frame_id = "vo"
     tf_msg.twist.twist.linear.x = 0.0
@@ -111,8 +118,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     tf_msg.pose.pose.orientation.z = quat[2]
     tf_msg.pose.pose.orientation.w = quat[3]
     tf_msg.pose.covariance = STANDARD_COVARIANCE
-    transform_pub.publish(tf_msg)
-    tf_msg.header.stamp.secs = 1
+    #print(tf_msg)
     transform_pub.publish(tf_msg)
 
     rospy.wait_for_service('/input_display')
@@ -129,6 +135,9 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
             end_index = i
     if type(start_index) == str or type(end_index) == str:
         exit("Vision_node: Specified image range is outside pickled range")
+
+    # Wait for the ekf to be available
+    #rospy.wait_for_service('robot_pose_ekf/get_status')
 
     # Start the image stitcher with the same path as the images loaded in the vision node
     request = Display_inputRequest()
@@ -147,7 +156,6 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         path = paths[i]
         timestamp = timestamps[i]
         angle, traveled_x, traveled_y = offsets[i]  # swapped x and y to move in right direction TODO: make this change earlier in the pipeline
-        print(f"Vision: Timestamp {timestamp}milliseconds")
 
         # Wait for webots timing
         previous_time = simulation_time_client.call(True).value
@@ -174,15 +182,21 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         #print(f"Vision: Time after waiting = {secs}\n--------------------------------\n")
 
         #print(f"Vision: X_travel = {traveled_x}, Y_travel = {traveled_y}")
-
+        
         # Calculate world pose
+        traveled_x = 0 #TODO: fix the incorrect translation along x from the image aligner
+        #world_pose_x += (traveled_x * math.cos(world_orientation) + traveled_y * math.sin(world_orientation)) * PIXEL_SIZE
+        #world_pose_y += (traveled_x * math.sin(world_orientation) + traveled_y * math.cos(world_orientation)) * PIXEL_SIZE
         world_pose_x += traveled_x * PIXEL_SIZE
         world_pose_y += traveled_y * PIXEL_SIZE
-        world_orientation = angle_add(world_orientation, angle)
+        world_orientation = angle_add(world_orientation, -angle)
 
         # Transform everything from camera frame to base frame
-        traveled_x_base, traveled_y_base = transform_coordinates(traveled_x, traveled_y, transform_camera_to_base)
-        world_pose_x_base, world_pose_y_base = transform_coordinates(world_pose_x, world_pose_y, transform_camera_to_base)
+        traveled_x_base, traveled_y_base = transform_coordinates(traveled_x * PIXEL_SIZE, traveled_y * PIXEL_SIZE, camera_to_base_rotation_only)
+        world_pose_x_base, world_pose_y_base = transform_coordinates(world_pose_x, world_pose_y, transform_camera_to_base_matrix)
+
+        #print(f"Vision: X_travel = {traveled_x_base}, Y_travel = {traveled_y_base}")
+        #print(f"Vision: X_pos = {world_pose_x_base}, Y_pos = {world_pose_y_base}")
 
         # Convert from seconds (float) to seconds and nanoseconds
         nanoseconds = int(secs*1e9%1e9)
@@ -194,8 +208,6 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         tf_msg.header.stamp.nsecs = nanoseconds
         tf_msg.header.frame_id = "world_frame"
         tf_msg.child_frame_id = "vo"
-
-        #print(f"Vision: X_travel = {traveled_x_base}, Y_travel = {traveled_y_base}")
 
         # Add twist
         tf_msg.twist.twist.linear.x = traveled_x_base
@@ -216,11 +228,11 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         tf_msg.pose.pose.orientation.z = quat[2]
         tf_msg.pose.pose.orientation.w = quat[3]
         tf_msg.pose.covariance = STANDARD_COVARIANCE
-
+        #print(tf_msg)
         transform_pub.publish(tf_msg)
-        rospy.sleep(0.1)
+        rospy.sleep(0.01)
         #DEBUG
-        print(f"Vision sent a transform to tf, timestamp: {seconds}.{nanoseconds}\n") # What if i just don't wait lmao
+        #print(f"Vision stamp: sec {tf_msg.header.stamp.secs}, nsec {tf_msg.header.stamp.nsecs}\n")
 
         
         # TODO: EKF is a few (1-2) transforms behind which causes extrapolation errors into the future
@@ -230,31 +242,37 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         #    pass
 
         # Get transform from camera to world for current image
-        print(f"Vision: Transform available")
+        # print(f"Vision: Transform available")
         try:
             transform_camera_to_world = tf_buffer.lookup_transform('world_frame', 'camera_frame', rospy.Time(seconds, nanoseconds))
             # Send each point in crack trajectory
             #print(f'path generated: {path}')
-            for point in path:
-                # geometry_msgs PointStamped Message
-                message = geo_msgs.PointStamped()
-                message.header.frame_id = "world_frame"
-                message.header.stamp.secs = seconds
-                message.header.stamp.nsecs = nanoseconds
-                coords = transform_coordinates(point[0] * PIXEL_SIZE, point[1] * PIXEL_SIZE, transform_camera_to_world.transform)
+            
+            message = PointStamped()
+            message.header.frame_id = "world_frame"
+            message.header.stamp.secs = seconds
+            message.header.stamp.nsecs = nanoseconds
+
+            # Create transformation matrix
+            quaternion = (transform_camera_to_world.transform.rotation.x, transform_camera_to_world.transform.rotation.y, transform_camera_to_world.transform.rotation.z, transform_camera_to_world.transform.rotation.w)
+            translation = (transform_camera_to_world.transform.translation.x, transform_camera_to_world.transform.translation.y, transform_camera_to_world.transform.translation.z)
+            point_transformation_matrix = tf_convert.quaternion_matrix(quaternion)
+            point_transformation_matrix[:3, 3] = translation
+
+            for x, y, _, _ in path:
+                # Use tuple unpacking to assign values to x and y
+                coords = transform_coordinates(x * PIXEL_SIZE, y * PIXEL_SIZE, point_transformation_matrix)
+                
                 message.point.x = coords[0]
                 message.point.y = coords[1]
-                # Used for sending the end of crack information
-                # message.point.z = point[2]
-
+                #print(message)
                 point_pub.publish(message)
-                #print(f"Vision: sent a point to /points")
                 r.sleep()
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as exception:
             print(exception)
             # For first transform publish again to ensure transform is available for first point
-            r.sleep()
+            #r.sleep()
             continue
 
 if __name__ == "__main__":

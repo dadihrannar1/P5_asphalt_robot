@@ -7,7 +7,6 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
-#include <geometry_msgs/PointStamped.h>
 #include <std_msgs/Float64.h>
 #include <new_controller/set_pos.h>
 #include <webots_ros/get_float.h>
@@ -35,22 +34,20 @@ private:
   tf2_ros::Buffer tf2_buffer;
   tf2_ros::TransformListener tf2_listener;
 
-  //List of current points in world coordinates
-  std::deque<geometry_msgs::PointStamped> world_trajectory_coordinates;
-
   //Robot link sizes (in mm)
   int L0 = 176;
   int L1 = 573;
   int L2 = 714;
 
   //Bounds for robot workspace in robot frame (in m)
-  float robot_x_min = (L0/2-500)/1000;
-  float robot_x_max = (L0/2+500)/1000;
-  float robot_y_min = abs(L1-L2)/1000;
-  float robot_y_max = (abs(L1-L2)+1000)/1000;
+  float robot_x_min = (L0/2-500);
+  float robot_x_max = (L0/2+500);
+  float robot_y_min = abs(L1-L2);
+  float robot_y_max = (abs(L1-L2)+1000);
 
   TrajectoryPolynomial generate_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
     TrajectoryPolynomial polynomial;
+    std::cout << "Polynomial generated: " << start_pos << " " << end_pos << " " << start_velocity << " " << end_velocity << std::endl;
     polynomial.a0 = start_pos;
     polynomial.a1 = start_velocity;
     polynomial.a2 = 3/pow(travel_time, 2) * (end_pos - start_pos) - (2/travel_time * polynomial.a1) - (1/travel_time * end_velocity);
@@ -65,16 +62,18 @@ private:
       float distance = sqrt(pow(coordinate_list.at(i).point.x - coordinate.point.x, 2) + pow(coordinate_list.at(i).point.y - coordinate.point.y, 2));
       
       //If coordinate is too close to any other coordinate then do now accept it as new
-      if(distance < min_dist){return true;}
+      if(distance < min_dist){return false;}
     }
-    return false;
+    return true;
   }
 
 public:
   CrackMapper() : tf2_buffer(ros::Duration(600)), tf2_listener(tf2_buffer){
-    std::cout << "Trajectory subscribing to crackmapper" << "\n";
     //point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
   }
+
+  //List of current points in world coordinates
+  std::deque<geometry_msgs::PointStamped> world_trajectory_coordinates;
 
   void coordinate_callback(const geometry_msgs::PointStamped::ConstPtr &coordinate){
     //Add trajectory coordinate to the back of the list
@@ -85,56 +84,64 @@ public:
     //Check to see if the point is already in the list
     if (is_new_coordinate(recieved_point, world_trajectory_coordinates, 0.01)){
       world_trajectory_coordinates.push_back(recieved_point);
-      ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+      //ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
     }else{ 
-      ROS_INFO("Received old point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+      //ROS_INFO("Received old point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
     }
   }
 
   std::deque<TrajectoryCombinedPoly> generate_trajectory(float vehicle_speed){
     //List of current coordinates in robot coordinates
     std::deque<geometry_msgs::PointStamped> robot_trajectory_coordinates;
-    std::cout << "Trajectory: Created coordinate deque" << "\n";
+
+    //ROS_INFO_STREAM(world_trajectory_coordinates.size());
 
     //Transform coordinates from world coordinates to robot coordinates
     for(int i = 0; i < world_trajectory_coordinates.size(); i++){
-      geometry_msgs::PointStamped point_in_robot_frame = tf2_buffer.transform(world_trajectory_coordinates.at(i), "robot_frame");
+      geometry_msgs::PointStamped point_in_robot_frame;
 
-      //Transform distances from m to mm
-      point_in_robot_frame.point.x = point_in_robot_frame.point.x*1000;
-      point_in_robot_frame.point.y = point_in_robot_frame.point.y*1000;
+      try{
+        geometry_msgs::TransformStamped current_robot_transform = tf2_buffer.lookupTransform("robot_frame", "world_frame", ros::Time(0));
 
-      //Determine if coordinates are within the robot frame
-      if(point_in_robot_frame.point.x < robot_x_min){}
-      else if(point_in_robot_frame.point.x > robot_x_max){}
-      else if(point_in_robot_frame.point.y < robot_y_min){}
-      else if(point_in_robot_frame.point.y > robot_y_max){}
-      else {
-        //coordinate is within robot frame
-        robot_trajectory_coordinates.push_back(point_in_robot_frame);
-        world_trajectory_coordinates.erase(world_trajectory_coordinates.begin() + i);
+        //Apply transform to points
+        tf2::doTransform(world_trajectory_coordinates.at(i), point_in_robot_frame, current_robot_transform);
+        
+        //Transform distances from m to mm
+        point_in_robot_frame.point.x = point_in_robot_frame.point.x*1000;
+        point_in_robot_frame.point.y = point_in_robot_frame.point.y*1000;
 
-        //TODO: What if the coordinate is already fixed? How do we remove them from the world trajectory?
+        //Determine if coordinates are within the robot frame
+        if(point_in_robot_frame.point.x < robot_x_min){}
+        else if(point_in_robot_frame.point.x > robot_x_max){}
+        else if(point_in_robot_frame.point.y < robot_y_min){}
+        else if(point_in_robot_frame.point.y > robot_y_max){}
+        else {
+          //coordinate is within robot frame
+          robot_trajectory_coordinates.push_back(point_in_robot_frame);
+          world_trajectory_coordinates.erase(world_trajectory_coordinates.begin() + i);
+
+          //TODO: What if the coordinate is already fixed? How do we remove them from the world trajectory?
+        }
+
+      }catch (tf2::TransformException &ex) {
+        ROS_ERROR("%s", ex.what());
       }
     }
-    std::cout << "Trajectory: Finished populating deque with points" << "\n";
 
     //List of current trajectories in robot coordinates
     std::deque<TrajectoryCombinedPoly> full_combined_trajectory = {};
-    
+
     // In case there are not enough points return
     if(robot_trajectory_coordinates.size() < 2){
       return full_combined_trajectory;
     }
 
     float start_x_velocity = 0;
-    
     float start_y_velocity = 0;
 
     //Keeping track of the movements in the y direction
     float total_travel_time = 0;
 
-    std::cout << "Trajectory: generate coordinate pairs" << "\n";
     //Generate polynomial between all the points in robot frame
     for(int i = 0; i < robot_trajectory_coordinates.size()-1; i++){
       geometry_msgs::PointStamped coordinate_1 = robot_trajectory_coordinates.at(i);
@@ -164,7 +171,6 @@ public:
           end_x_velocity = 0;
         }
       }
-      std::cout << "Trajectory: Generate trajectory between points" << "\n";
       //Polynomial for x movements
       TrajectoryPolynomial x_polynomial = generate_polynomial(coordinate_1.point.x, coordinate_2.point.x, start_x_velocity, end_x_velocity, travel_time);
       start_x_velocity = end_x_velocity;
@@ -214,13 +220,13 @@ float adjust_speed(){
 }
 
 //Thread function for following trajectory
-void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle n, int step_size){
+void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle& n, float step_size){
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
   new_controller::set_pos motorSrv; // This is the message for the motor node
 
   //Service for timing with webots
-  ros::service::waitForService("/fivebarTrailer/get_time");
-  ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/get_time");
+  ros::service::waitForService("/fivebarTrailer/robot/get_time");
+  ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/robot/get_time");
   webots_ros::get_float time_request;
   time_request.request.ask = true;
 
@@ -232,13 +238,17 @@ void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeH
   else{exit(420);}
 
   for(int i = 0; i <polynomial.size(); i++){
-    int start_time;
+    int start_time = 0;
     int end_time = start_time + polynomial.at(i).delta_time;
+    
 
-    for(int t = start_time; t <= end_time; t+=step_size){
+    for(float t = start_time; t <= end_time; t+=step_size){
       //Send trajectory to manipulator
       motorSrv.request.x = polynomial.at(i).x_polynomial.a3 * pow(t, 3) + polynomial.at(i).x_polynomial.a2 * pow(t, 2) + polynomial.at(i).x_polynomial.a1 * t + polynomial.at(i).x_polynomial.a0;
       motorSrv.request.y = polynomial.at(i).y_polynomial.a3 * pow(t, 3) + polynomial.at(i).y_polynomial.a2 * pow(t, 2) + polynomial.at(i).y_polynomial.a1 * t + polynomial.at(i).y_polynomial.a0;
+      std::cout << "time: " << t << "x_polynomial.a3: " << polynomial.at(i).x_polynomial.a3 << "\n";
+      std::cout << "Request x " << motorSrv.request.x << std::endl;
+      std::cout << "Request y " << motorSrv.request.y << std::endl;
       manipulatorClient.call(motorSrv);
       while(true){
         if(time_client.call(time_request)){
@@ -254,6 +264,15 @@ void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeH
   }
 }
 
+void coordinate_callback_dummy(const geometry_msgs::PointStamped::ConstPtr &coordinate){
+    //Add trajectory coordinate to the back of the list
+    geometry_msgs::PointStamped recieved_point;
+    recieved_point.header = coordinate -> header;
+    recieved_point.point = coordinate -> point;
+
+    ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+  }
+
 int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
   ros::NodeHandle n;
@@ -262,7 +281,10 @@ int main(int argc, char **argv){
   //ros::topic::waitForMessage<geometry_msgs::PointStamped>("/points");
 
   CrackMapper trajectory_mapper;
+  //ros::Subscriber point_sub = n.subscribe<geometry_msgs::PointStamped>("/points", 1000, coordinate_callback_dummy);
   ros::Subscriber point_sub = n.subscribe<geometry_msgs::PointStamped>("/points", 10000, &CrackMapper::coordinate_callback, &trajectory_mapper);
+  
+  std::cout << "Trajectory subscribed to " << point_sub.getTopic() << " with " << point_sub.getNumPublishers() << " publishers\n";
 
   //trajectory service frequency
   float srv_hz = 100;
@@ -270,10 +292,8 @@ int main(int argc, char **argv){
   while (n.ok()){
     ros::spinOnce(); //Spin subscriber once
     float vehicle_speed = adjust_speed();
-    std::cout << "Trajectory calculated vehicle speed\n";
     std::deque<TrajectoryCombinedPoly> trajectory_combined = trajectory_mapper.generate_trajectory(vehicle_speed);
-    std::cout << "Trajectory generated... Sending";
-
+    
     //Start thread to send trajectory
     std::thread t(std::bind(trajectory_thread, trajectory_combined, n, 1/srv_hz));
     t.join();

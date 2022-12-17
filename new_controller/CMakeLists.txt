@@ -77,7 +77,7 @@ ${Boost_INCLUDE_DIRS}
 ## Instructions for keyboard_teleop node
 
 
-add_executable(manipulator controllers/manipulator_controller.cpp)
+add_executable(manipulator src/manipulator_controller.cpp)
 
 add_dependencies(manipulator new_controller_generate_messages_cpp)
 

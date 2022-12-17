@@ -1,6 +1,6 @@
 // Documentation for nodes and services: https://cyberbotics.com/doc/reference/nodes-and-api-functions
 
-// Name of robot: fivebarTrailer_2841
+// Name of robot: fivebarTrailer
 /* Nodes:
     1: ros::service /fivebarTrailer/Motor_L/set_position <position>
     2: ros::service /fivebarTrailer/Motor_R/set_position <position>
