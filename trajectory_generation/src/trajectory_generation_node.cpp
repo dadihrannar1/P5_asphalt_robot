@@ -58,6 +58,17 @@ private:
     return polynomial;
   }
 
+  bool is_new_coordinate(geometry_msgs::PointStamped coordinate, std::deque<geometry_msgs::PointStamped> coordinate_list, float min_dist){
+    //Iterate through all existing coordinates
+    for(int i = 0; i < coordinate_list.size(); i++){
+      //Calculate the distance between coordinates in list and the new coordinate
+      float distance = sqrt(pow(coordinate_list.at(i).points.x - coordinate.point.x, 2) + pow(coordinate_list.at(i).point.y - coordinate.point.y, 2));
+      
+      //If coordinate is too close to any other coordinate then do now accept it as new
+      if(distance < min_dist){return true;}
+      else {return false;}
+  }
+
   void coordinate_callback(const geometry_msgs::PointStamped::ConstPtr &coordinate){
     //Add trajectory coordinate to the back of the list
     geometry_msgs::PointStamped recieved_point;
