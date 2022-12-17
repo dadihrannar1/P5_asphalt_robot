@@ -74,9 +74,15 @@ private:
     geometry_msgs::PointStamped recieved_point;
     recieved_point.header = coordinate -> header;
     recieved_point.point = coordinate -> point;
-    world_trajectory_coordinates.push_back(recieved_point);
 
-    ROS_INFO("Received point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+    //Check to see if the point is already in the list
+    if (is_new_coordinate(recieved_point, world_trajectory_coordinates, 0.01)){
+      world_trajectory_coordinates.push_back(recieved_point);
+      ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+    }else{ 
+      ROS_INFO("Received old point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+    }
+    
   }
 
 public:
