@@ -30,7 +30,7 @@ struct TrajectoryCombinedPoly{
 
 class CrackMapper{
 private:
-  ros::NodeHandle n_;
+  //ros::NodeHandle n_;
   ros::Subscriber point_sub;
   tf2_ros::Buffer tf2_buffer;
   tf2_ros::TransformListener tf2_listener;
@@ -69,10 +69,10 @@ private:
   }
 
 public:
-  CrackMapper(ros::NodeHandle& n): n_(n), 
+  CrackMapper://(ros::NodeHandle& n): n_(n), 
   tf2_buffer(ros::Duration(600)), tf2_listener(tf2_buffer){
     std::cout << "Trajectory subscribing to crackmapper" << "\n";
-    point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
+    //point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
   }
 
   std::deque<TrajectoryCombinedPoly> generate_trajectory(float vehicle_speed){
@@ -245,7 +245,8 @@ int main(int argc, char **argv){
   ros::service::waitForService("/fivebarTrailer/robot/get_time");
   //ros::topic::waitForMessage<geometry_msgs::PointStamped>("/points");
 
-  CrackMapper trajectory_mapper(n);
+  CrackMapper trajectory_mapper;
+  point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 10000, &CrackMapper::coordinate_callback, &trajectory_mapper);
 
   //trajectory service frequency
   float srv_hz = 100;
