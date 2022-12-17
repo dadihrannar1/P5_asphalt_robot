@@ -4,6 +4,7 @@ import cv2
 import pickle
 import time
 from pathlib import Path
+import numpy as np
 
 
 # Import the srv and msg messages
@@ -12,7 +13,7 @@ from vision.srv import Draw_workspace
 from webots_ros.srv import display_image_load, display_image_loadRequest
 from webots_ros.srv import display_image_paste, display_image_pasteRequest
 from webots_ros.srv import display_draw_oval, display_draw_ovalRequest
-from webots_ros.srv import set_float
+from webots_ros.srv import set_float, set_floatRequest
 from webots_ros.srv import set_int
 from webots_ros.srv import set_bool
 from webots_ros.msg import Float64Stamped
@@ -53,7 +54,7 @@ class DisplayService(object):
     desired_w, desired_h = (int(16384/1.5),int(4096/1.5))
     # Sizes of variables
     pixelSize = 0.8853  # mm/pixel
-    tickSize = 11.9381  # encoder size
+    tickSize = 380*np.pi/100 # mm - encoder size
     tickPixel = tickSize /pixelSize  # encoder ticks to pixel size
     image_path = ""
 
@@ -98,7 +99,7 @@ class DisplayService(object):
         # Set services to advertise
         self.displayService = rospy.Service('input_display', Display_input, self.setDisplay)
         self.speedService = rospy.Service('set_display_velocity', set_float, self.setSpeed)
-        self.boolService = rospy.Service('set_display_state', set_bool, self.setState)
+        #self.boolService = rospy.Service('set_display_state', set_bool, self.setState)
         self.drawingService = rospy.Service('set_draw_in_workspace', Draw_workspace, self.drawInWorkspace)
 
         # Set up publishers
@@ -138,7 +139,7 @@ class DisplayService(object):
         with open(f"{path}/image_details.json") as json_file:
             data = json.load(json_file)
             filename = data[0]
-            #timer = [int(s) for s in data[1]]  # Converting string to int
+            timer = [int(s) for s in data[1]]  # Converting string to int
             encoder1 = [int(s) for s in data[2]]
             encoder2 = [int(s) for s in data[3]]
 
@@ -193,8 +194,16 @@ class DisplayService(object):
         # Set the motor speed back to zero
         self.vel_motor_client.call(0)
         
+        # Calculate starting speed
+        start_speed = ((encoder1[starting_image+1]*self.tickSize)/(timer[starting_image+1]-timer[starting_image])) # m/s
+        self.curr_vel = start_speed
+        print(start_speed)
+        self.vel_motor_client.call(self.curr_vel)
+        self.pos_motor_client.call(20)
+
         # Tell the rosserver display is ready to start
         self.state_publisher.publish(True)
+        self.setState(True)
         return 1
 
     # A service for setting the speed of the display

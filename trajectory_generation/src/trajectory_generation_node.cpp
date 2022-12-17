@@ -47,7 +47,7 @@ private:
 
   TrajectoryPolynomial generate_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
     TrajectoryPolynomial polynomial;
-    std::cout << "Polynomial generated: " << start_pos << " " << end_pos << " " << start_velocity << " " << end_velocity << std::endl;
+    //std::cout << "Polynomial generated: " << start_pos << " " << end_pos << " " << start_velocity << " " << end_velocity << std::endl;
     polynomial.a0 = start_pos;
     polynomial.a1 = start_velocity;
     polynomial.a2 = 3/pow(travel_time, 2) * (end_pos - start_pos) - (2/travel_time * polynomial.a1) - (1/travel_time * end_velocity);
@@ -246,9 +246,9 @@ void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeH
       //Send trajectory to manipulator
       motorSrv.request.x = polynomial.at(i).x_polynomial.a3 * pow(t, 3) + polynomial.at(i).x_polynomial.a2 * pow(t, 2) + polynomial.at(i).x_polynomial.a1 * t + polynomial.at(i).x_polynomial.a0;
       motorSrv.request.y = polynomial.at(i).y_polynomial.a3 * pow(t, 3) + polynomial.at(i).y_polynomial.a2 * pow(t, 2) + polynomial.at(i).y_polynomial.a1 * t + polynomial.at(i).y_polynomial.a0;
-      std::cout << "time: " << t << "x_polynomial.a3: " << polynomial.at(i).x_polynomial.a3 << "\n";
-      std::cout << "Request x " << motorSrv.request.x << std::endl;
-      std::cout << "Request y " << motorSrv.request.y << std::endl;
+      //std::cout << "time: " << t << "x_polynomial.a3: " << polynomial.at(i).x_polynomial.a3 << "\n";
+      //std::cout << "Request x " << motorSrv.request.x << std::endl;
+      //std::cout << "Request y " << motorSrv.request.y << std::endl;
       manipulatorClient.call(motorSrv);
       while(true){
         if(time_client.call(time_request)){
@@ -270,7 +270,7 @@ void coordinate_callback_dummy(const geometry_msgs::PointStamped::ConstPtr &coor
     recieved_point.header = coordinate -> header;
     recieved_point.point = coordinate -> point;
 
-    ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
+    //ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
   }
 
 int main(int argc, char **argv){
@@ -287,7 +287,7 @@ int main(int argc, char **argv){
   std::cout << "Trajectory subscribed to " << point_sub.getTopic() << " with " << point_sub.getNumPublishers() << " publishers\n";
 
   //trajectory service frequency
-  float srv_hz = 100;
+  float srv_hz = 10;
 
   while (n.ok()){
     ros::spinOnce(); //Spin subscriber once

@@ -11,8 +11,8 @@
   </include>
 
   <arg name="auto_close" default="false" doc="Startup mode"/>
-  <node name="manipulator" pkg="new_controller" type="manipulator" required="$(arg auto_close)"/>
-  <node name="webots_display" pkg="vision" type="display.py" required="$(arg auto_close)"/>
+  <node name="manipulator" pkg="new_controller" type="manipulator" required="$(arg auto_close)" output="screen"/>
+  <node name="webots_display" pkg="vision" type="display.py" required="$(arg auto_close)" output="screen"/>
   <!--node name="display_test" pkg="new_controller" type="display_test" required="$(arg auto_close)"/-->
 </launch>
 
