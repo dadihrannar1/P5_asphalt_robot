@@ -31,7 +31,7 @@ struct TrajectoryCombinedPoly{
 class CrackMapper{
 private:
   //ros::NodeHandle n_;
-  ros::Subscriber point_sub;
+  //ros::Subscriber point_sub;
   tf2_ros::Buffer tf2_buffer;
   tf2_ros::TransformListener tf2_listener;
 
@@ -62,11 +62,18 @@ private:
     //Iterate through all existing coordinates
     for(int i = 0; i < coordinate_list.size(); i++){
       //Calculate the distance between coordinates in list and the new coordinate
-      float distance = sqrt(pow(coordinate_list.at(i).points.x - coordinate.point.x, 2) + pow(coordinate_list.at(i).point.y - coordinate.point.y, 2));
+      float distance = sqrt(pow(coordinate_list.at(i).point.x - coordinate.point.x, 2) + pow(coordinate_list.at(i).point.y - coordinate.point.y, 2));
       
       //If coordinate is too close to any other coordinate then do now accept it as new
       if(distance < min_dist){return true;}
-      else {return false;}
+    }
+    return false;
+  }
+
+public:
+  CrackMapper() : tf2_buffer(ros::Duration(600)), tf2_listener(tf2_buffer){
+    std::cout << "Trajectory subscribing to crackmapper" << "\n";
+    //point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
   }
 
   void coordinate_callback(const geometry_msgs::PointStamped::ConstPtr &coordinate){
@@ -82,14 +89,6 @@ private:
     }else{ 
       ROS_INFO("Received old point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
     }
-    
-  }
-
-public:
-  CrackMapper://(ros::NodeHandle& n): n_(n), 
-  tf2_buffer(ros::Duration(600)), tf2_listener(tf2_buffer){
-    std::cout << "Trajectory subscribing to crackmapper" << "\n";
-    //point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
   }
 
   std::deque<TrajectoryCombinedPoly> generate_trajectory(float vehicle_speed){
@@ -263,7 +262,7 @@ int main(int argc, char **argv){
   //ros::topic::waitForMessage<geometry_msgs::PointStamped>("/points");
 
   CrackMapper trajectory_mapper;
-  point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 10000, &CrackMapper::coordinate_callback, &trajectory_mapper);
+  ros::Subscriber point_sub = n.subscribe<geometry_msgs::PointStamped>("/points", 10000, &CrackMapper::coordinate_callback, &trajectory_mapper);
 
   //trajectory service frequency
   float srv_hz = 100;
