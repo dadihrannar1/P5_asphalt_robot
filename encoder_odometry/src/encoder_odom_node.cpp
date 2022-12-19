@@ -193,6 +193,7 @@ void simulation_ready_callback(const std_msgs::Bool::ConstPtr& ready_state){
 float current_time = 0.0;
 void webots_time_callback(const std_msgs::Float32::ConstPtr &time){
   current_time = time->data;
+  ROS_INFO("Encoder: Simulation time is %f", current_time);
 }
 
 int main(int argc, char** argv){
