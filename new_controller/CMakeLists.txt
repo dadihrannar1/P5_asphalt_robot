@@ -23,6 +23,7 @@ find_package(Boost REQUIRED COMPONENTS system)
   add_message_files(
     FILES
     motor_pos.msg
+    trajectory_polynomial.msg
   )
 
 ## Generate services in the 'srv' folder

@@ -7,16 +7,18 @@ from geometry_msgs.msg import Transform
 from geometry_msgs.msg import PointStamped
 #import geometry_msgs.msg as geo_msgs
 import nav_msgs.msg as nav_msgs
-from std_msgs.msg import Float64
+from std_msgs.msg import Float32
 from webots_ros.srv import get_float
 import math
 import time
 import pickle
 from vision.srv import Display_input, Display_inputRequest
 
-vehicle_speed = ''
+vehicle_speed = 0.0
 def vehicle_vel_callback(msg):
+    global vehicle_speed
     vehicle_speed = msg.data
+    print(f"Vision: vehicle speed is {vehicle_speed}")
 
 # Function for adding angles bounded to [0, 2*PI[
 def angle_add(angle_1, angle_2):
@@ -47,7 +49,7 @@ def transform_coordinates(x_coordinate, y_coordinate, transformation):
 def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     point_pub = rospy.Publisher('/points', PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
-    vehicle_vel_sub = rospy.Subscriber("/vehicle_speed", Float64, vehicle_vel_callback)
+    vehicle_vel_sub = rospy.Subscriber("/velocity", Float32, vehicle_vel_callback)
     simulation_time_client = rospy.ServiceProxy("/fivebarTrailer/robot/get_time", get_float)
 
     start_image = rospy.get_param("~Start_image")
@@ -160,21 +162,23 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         # Wait for webots timing
         previous_time = simulation_time_client.call(True).value
         #rint(f"Vision: Time before waiting = {previous_time}")
-        if type(vehicle_speed) == str:
+        if vehicle_speed == 0.0:
             # Wait to get first image for as long as the arduino recorded
             #print(f"Vision: Time to wait = {timestamp/1000}seconds")
             while simulation_time_client.call(True).value < previous_time + timestamp/1000:
                 #curr_time = simulation_time_client.call(True)
-                time.sleep(0.1)
+                time.sleep(0.005)
+                pass
             previous_time = simulation_time_client.call(True).value + timestamp/1000
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
-            time_to_next_image = offsets[i+1, 1] / vehicle_speed  #THIS MAY FUCK UP AND MAKE THE TIME TO WAIT VERY SHORT IF IT DOES CHANGE INDEX TO 2
-            
+            time_to_next_image = traveled_y*PIXEL_SIZE / vehicle_speed
+
             # Wait to get first image for as long as the vehicle velocity demands
             while simulation_time_client.call(True).value < previous_time + time_to_next_image:
                 #curr_time = simulation_time_client.call(True)
-                time.sleep(0.1)
+                time.sleep(0.005)
+                pass
             previous_time = simulation_time_client.call(True).value + time_to_next_image
 
         # Get timestamp for tf
@@ -184,7 +188,8 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         #print(f"Vision: X_travel = {traveled_x}, Y_travel = {traveled_y}")
         
         # Calculate world pose
-        traveled_x = 0 #TODO: fix the incorrect translation along x from the image aligner
+        traveled_x = 0 #TODO: fix the incorrect translation and rotation from the image aligner
+        angle = 0
         #world_pose_x += (traveled_x * math.cos(world_orientation) + traveled_y * math.sin(world_orientation)) * PIXEL_SIZE
         #world_pose_y += (traveled_x * math.sin(world_orientation) + traveled_y * math.cos(world_orientation)) * PIXEL_SIZE
         world_pose_x += traveled_x * PIXEL_SIZE
@@ -270,7 +275,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
                 r.sleep()
 
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as exception:
-            print(exception)
+            print(f"Vision: {exception}")
             # For first transform publish again to ensure transform is available for first point
             #r.sleep()
             continue

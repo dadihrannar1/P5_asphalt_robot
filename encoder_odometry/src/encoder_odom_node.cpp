@@ -3,7 +3,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/Odometry.h>
-#include <std_msgs/Float64.h>
+#include <std_msgs/Float32.h>
 #include <std_msgs/Bool.h>
 #include <boost/array.hpp>
 #include <fstream>
@@ -177,9 +177,10 @@ static const boost::array<_Float64, 36> STANDARD_TWIST_COVARIANCE =
 //Vehicle speed callback for simulation
 float vehicle_speed;
 bool vehicle_speed_adjusted = false;
-void vehicle_speed_callback(const std_msgs::Float64::ConstPtr& vehicle_vel){
+void vehicle_speed_callback(const std_msgs::Float32::ConstPtr& vehicle_vel){
     vehicle_speed = vehicle_vel -> data;
     vehicle_speed_adjusted = true;
+    ROS_INFO("Encoder: Vehicle speed is %f", vehicle_speed);
 }
 
 //Callback function for simulation to communicate readyness
@@ -222,7 +223,7 @@ int main(int argc, char** argv){
     DiffDrive ddr_position(WHEEL_DIAMETER, ENCODER_TICKS, LENGTH_BETWEEN_WHEELS);
 
     //Simulation subscribers
-    ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float64>("/vehicle_speed", 100, vehicle_speed_callback);
+    ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float32>("/velocity", 10, vehicle_speed_callback);
     ros::Subscriber simulation_ready_sub = n.subscribe<std_msgs::Bool>("/display_state", 10, simulation_ready_callback);
     
     //Get simulation parameters from ros launch
@@ -257,11 +258,11 @@ int main(int argc, char** argv){
     display_state_client.call(display_state_request);
     
     //Get initial time
-    float previous_time;
-    if(time_client.call(time_request)){
-        previous_time = time_request.response.value;
-    }
-    else{exit(420);}
+    //float previous_time;
+    //if(time_client.call(time_request)){
+    //    previous_time = time_request.response.value;
+    //}
+    //else{exit(420);}
 
     //Iterate through the recorded data
     for(int i = 0; i < recorded_data.encoder1.size(); i++) {
@@ -269,25 +270,9 @@ int main(int argc, char** argv){
         if(!simulation_readystate){
             exit(0);
         }
-        //Wait until the next recorded timestamp from the arduino data
-        if(!vehicle_speed_adjusted){
-            while(time_request.response.value < previous_time + float(recorded_data.time[i])/1000){
-                time_client.call(time_request);
-                sleep(0.1);
-            }
-            previous_time = time_request.response.value;
-        }
-        else{
-            //calculate wait time
-            float time_to_next_encoder_tick = (float(recorded_data.encoder1[i+1]) * 0.38*M_PI/100) / vehicle_speed; //This may overflow at the last encoder increments
 
-            //Wait until calculated time
-            while(time_request.response.value < previous_time + time_to_next_encoder_tick/1000){
-                time_client.call(time_request);
-                sleep(0.1);
-            }
-            previous_time = time_request.response.value;
-        }
+        time_client.call(time_request);
+        float previous_time = time_request.response.value;
         
         //Round timestamp to 3 digit precision
         int seconds = int(std::round(previous_time));
@@ -320,6 +305,26 @@ int main(int argc, char** argv){
         //publish the message
         odom_pub.publish(odom);
 
-        r.sleep();
+        //Wait until the next recorded timestamp from the arduino data
+        if(!vehicle_speed_adjusted){
+            time_client.call(time_request);
+            float current_time = time_request.response.value;
+            while(current_time < previous_time + float(recorded_data.time[i])/1000){
+                time_client.call(time_request);
+                current_time = time_request.response.value;
+            }
+        }
+        else{
+            //calculate wait time
+            float time_to_next_encoder_tick = (float(recorded_data.encoder1[i]) * 0.38*M_PI/100) / vehicle_speed;
+
+            //Wait until calculated time
+            time_client.call(time_request);
+            float current_time = time_request.response.value;
+            while(current_time < previous_time + time_to_next_encoder_tick){
+                time_client.call(time_request);
+                current_time = time_request.response.value;
+            }
+        }
     }
 }

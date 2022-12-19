@@ -15,9 +15,9 @@ from webots_ros.srv import display_image_paste, display_image_pasteRequest
 from webots_ros.srv import display_draw_oval, display_draw_ovalRequest
 from webots_ros.srv import set_float, set_floatRequest
 from webots_ros.srv import set_int
-from webots_ros.srv import set_bool
 from webots_ros.msg import Float64Stamped
 from std_msgs.msg import Bool
+from std_msgs.msg import Float32
 
 # Import the rospy library
 import rospy
@@ -99,12 +99,12 @@ class DisplayService(object):
         # Set services to advertise
         self.displayService = rospy.Service('input_display', Display_input, self.setDisplay)
         self.speedService = rospy.Service('set_display_velocity', set_float, self.setSpeed)
-        #self.boolService = rospy.Service('set_display_state', set_bool, self.setState)
         self.drawingService = rospy.Service('set_draw_in_workspace', Draw_workspace, self.drawInWorkspace)
 
         # Set up publishers
         self.state_publisher = rospy.Publisher('display_state', Bool, queue_size=10)
         self.state_publisher.publish(False)
+        self.vel_publisher = rospy.Publisher('velocity', Float32, queue_size=10)
 
         # Set up the display services
         self.display_image_load_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_load", display_image_load)
@@ -115,7 +115,7 @@ class DisplayService(object):
         # start the encoder and set a subscriber
         encService = rospy.ServiceProxy(f"{self.model_name}/position_sensor1/enable", set_int)
         encService.call(32) # enable position sensor -> 32 is the rate
-        encSub = rospy.Subscriber(f"{self.model_name}/position_sensor1/value", Float64Stamped, self.encoder_callback)
+        rospy.Subscriber(f"{self.model_name}/position_sensor1/value", Float64Stamped, self.encoder_callback)
 
         # Motor clients
         self.vel_motor_client = rospy.ServiceProxy(f"{self.model_name}/Display_motor1/set_velocity", set_float)
@@ -192,13 +192,18 @@ class DisplayService(object):
         # make the motor go back to start 
         self.pos_motor_client.call(self.start_point)
         # Set the motor speed back to zero
+        time.sleep(0.1)
+        
         self.vel_motor_client.call(0)
+
+        
         
         # Calculate starting speed
         start_speed = ((encoder1[starting_image+1]*self.tickSize)/(timer[starting_image+1]-timer[starting_image])) # m/s
         self.curr_vel = start_speed
-        print(start_speed)
+        self.curr_vel = 0.277778
         self.vel_motor_client.call(self.curr_vel)
+        self.vel_publisher.publish(self.curr_vel)
         self.pos_motor_client.call(20)
 
         # Tell the rosserver display is ready to start
@@ -210,6 +215,7 @@ class DisplayService(object):
     def setSpeed(self, msg):
         self.curr_vel = msg.value # motor speed is in m/s
         self.vel_motor_client.call(self.curr_vel)
+        self.vel_publisher.publish(self.curr_vel)
         return 1
     
     # a service that draws in the workspace according to the manipulator position
