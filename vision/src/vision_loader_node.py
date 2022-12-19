@@ -20,6 +20,12 @@ def vehicle_vel_callback(msg):
     vehicle_speed = msg.data
     print(f"Vision: vehicle speed is {vehicle_speed}")
 
+def Time_callback(Time):
+    global simulation_time
+    simulation_time = Time.data
+    print(f"Vision: simulation time is {simulation_time}")
+
+
 # Function for adding angles bounded to [0, 2*PI[
 def angle_add(angle_1, angle_2):
     if(angle_1 + angle_2 >= 2*math.pi):
@@ -50,7 +56,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     point_pub = rospy.Publisher('/points', PointStamped, queue_size=10)
     transform_pub = rospy.Publisher('/vo', nav_msgs.Odometry, queue_size=50)
     vehicle_vel_sub = rospy.Subscriber("/velocity", Float32, vehicle_vel_callback)
-    simulation_time_client = rospy.ServiceProxy("/fivebarTrailer/robot/get_time", get_float)
+    simulation_time_sub = rospy.Subscriber("/webots_time", Float32, Time_callback)
 
     start_image = rospy.get_param("~Start_image")
     end_image = rospy.get_param("~End_image")
@@ -161,29 +167,29 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         angle, traveled_x, traveled_y = offsets[i]  # swapped x and y to move in right direction TODO: make this change earlier in the pipeline
 
         # Wait for webots timing
-        previous_time = simulation_time_client.call(True).value
+        previous_time = simulation_time
         #rint(f"Vision: Time before waiting = {previous_time}")
         if vehicle_speed == 0.0:
             # Wait to get first image for as long as the arduino recorded
             #print(f"Vision: Time to wait = {timestamp/1000}seconds")
-            while simulation_time_client.call(True).value < previous_time + timestamp/1000:
+            while simulation_time < previous_time + timestamp/1000:
                 #curr_time = simulation_time_client.call(True)
                 time.sleep(0.008)
                 pass
-            previous_time = simulation_time_client.call(True).value + timestamp/1000
+            previous_time = simulation_time + timestamp/1000
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
             time_to_next_image = traveled_y*PIXEL_SIZE / vehicle_speed
 
             # Wait to get first image for as long as the vehicle velocity demands
-            while simulation_time_client.call(True).value < previous_time + time_to_next_image:
+            while simulation_time < previous_time + time_to_next_image:
                 #curr_time = simulation_time_client.call(True)
                 time.sleep(0.008)
                 pass
-            previous_time = simulation_time_client.call(True).value + time_to_next_image
+            previous_time = simulation_time + time_to_next_image
 
         # Get timestamp for tf
-        secs = simulation_time_client.call(True).value
+        secs = simulation_time
         #print(f"Vision: Time after waiting = {secs}\n--------------------------------\n")
 
         #print(f"Vision: X_travel = {traveled_x}, Y_travel = {traveled_y}")
