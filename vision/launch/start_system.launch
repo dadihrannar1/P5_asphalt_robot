@@ -17,7 +17,7 @@
     <!--node name="display_test" pkg="new_controller" type="display_test" required="$(arg auto_close)"/-->
 
     <!-- static transforms-->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_transform" args=" 0.0584708 -0.3381208 0 1.57079632679489661923 0 3.1415926536 base_link camera_frame" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_camera_transform" args=" 0.0584708 -0.478062 0 1.57079632679489661923 0 3.1415926536 base_link camera_frame" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_robot_transform"  args="-0.665 -0.088 0 1.57079632679489661923 0 0  base_link robot_frame" />
    
     <!-- EKF -->

@@ -65,9 +65,11 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     tf_buffer = tf2_ros.Buffer(rospy.Time(10000))
     tf_listener = tf2_ros.TransformListener(tf_buffer)
 
+    PIXEL_SIZE = 0.0008853*2   # In meters
+
     # Transform from camera to base (must be the inverse of base_to_camera_transform)
     transform_camera_to_base = Transform()
-    transform_camera_to_base.translation.x = 0.3381208
+    transform_camera_to_base.translation.x = 1080/2*PIXEL_SIZE/2
     transform_camera_to_base.translation.y = -0.0584708
     transform_camera_to_base.translation.z = 0
     transform_camera_to_base.rotation.x = 0.7071068
@@ -90,7 +92,6 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     world_orientation = 0.0
 
     # Scalar from pixels to distances in camera frame
-    PIXEL_SIZE = 0.0008853   # In meters
     STANDARD_COVARIANCE = [1.9074e-05, 0, 0, 0, 0, 0,
                            0, 1.9074e-05, 0, 0, 0, 0,
                            0, 0, 1.9074e-05, 0, 0, 0,
@@ -167,7 +168,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
             #print(f"Vision: Time to wait = {timestamp/1000}seconds")
             while simulation_time_client.call(True).value < previous_time + timestamp/1000:
                 #curr_time = simulation_time_client.call(True)
-                time.sleep(0.005)
+                time.sleep(0.008)
                 pass
             previous_time = simulation_time_client.call(True).value + timestamp/1000
         else:
@@ -177,7 +178,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
             # Wait to get first image for as long as the vehicle velocity demands
             while simulation_time_client.call(True).value < previous_time + time_to_next_image:
                 #curr_time = simulation_time_client.call(True)
-                time.sleep(0.005)
+                time.sleep(0.008)
                 pass
             previous_time = simulation_time_client.call(True).value + time_to_next_image
 

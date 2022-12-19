@@ -32,7 +32,7 @@
 #include <stdio.h>
 
 // Time step for the webots simulation
-#define TIME_STEP 4
+#define TIME_STEP 8
 
 ros::ServiceClient leftMotorClient;
 ros::ServiceClient rightMotorClient;
@@ -101,11 +101,15 @@ int main(int argc, char **argv) {
   webots_ros::get_float time_request;
   time_request.request.ask = true;
 
+  // Due to the fast sample speed, once in a while the webots_ros controller misses a call
+  ros::Duration(0.1).sleep();
   // Encoders have to be enabled before their topics are available
   ros::ServiceClient encoderClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/PosL/enable");
   encoderClient.call(timeStepSrv);
+  ros::Duration(0.1).sleep();
   encoderClient = n.serviceClient<webots_ros::set_int>("/fivebarTrailer/PosR/enable");
   encoderClient.call(timeStepSrv);
+  ros::Duration(0.1).sleep();
 
   // Clients for the set motor position
   leftMotorClient = n.serviceClient<webots_ros::set_float>("/fivebarTrailer/MotorL/set_position");
@@ -138,6 +142,7 @@ int main(int argc, char **argv) {
   ros::Subscriber trajectoryService = n.subscribe("trajectory_polynomial", 10, &robotController::polyCallback, &rc);
 
   // main loop
+  ros::spin();
   while (ros::ok()) {
 
     float trajectory_refresh_rate = 1000.0;

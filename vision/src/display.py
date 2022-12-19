@@ -99,7 +99,9 @@ class DisplayService(object):
         # Set services to advertise
         self.displayService = rospy.Service('input_display', Display_input, self.setDisplay)
         self.speedService = rospy.Service('set_display_velocity', set_float, self.setSpeed)
-        self.drawingService = rospy.Service('set_draw_in_workspace', Draw_workspace, self.drawInWorkspace)
+        self.drawingService = rospy.Service('draw_in_workspace', Draw_workspace, self.drawInWorkspace)
+
+
 
         # Set up publishers
         self.state_publisher = rospy.Publisher('display_state', Bool, queue_size=10)
@@ -114,7 +116,7 @@ class DisplayService(object):
 
         # start the encoder and set a subscriber
         encService = rospy.ServiceProxy(f"{self.model_name}/position_sensor1/enable", set_int)
-        encService.call(32) # enable position sensor -> 32 is the rate
+        encService.call(4) # enable position sensor -> 32 is the rate
         rospy.Subscriber(f"{self.model_name}/position_sensor1/value", Float64Stamped, self.encoder_callback)
 
         # Motor clients
@@ -220,24 +222,21 @@ class DisplayService(object):
     
     # a service that draws in the workspace according to the manipulator position
     def drawInWorkspace(self, msg):
-        # Set the drawing color to red
-        red_color = 8914952
-        self.display_image_color_client.call(red_color)
-       
-        recieved_x = msg.x
-        recieved_y = msg.y
+        #print(f'Display recieved positions: {msg.x}, {msg.y}, {msg.radius}')
+        recieved_x = msg.x/self.pixelSize
+        recieved_y = msg.y/self.pixelSize
         recieved_r = msg.radius
 
         # Find the position in world coordinates
         L0 = 176 # This is the robot distance between motors
 
-        zero_pos = (self.desired_h/2+(L0/2)/self.pixelSize, self.encpos*1000/self.pixelSize+self.desired_w/2)
+        zero_pos = (self.desired_h/2+(L0/self.pixelSize/2), (self.encpos*1000)/self.pixelSize+self.desired_w/2)
         cy,cx = (zero_pos[0]-recieved_x, zero_pos[1]-recieved_y)
 
         # Draw image
         a, b = (recieved_r, recieved_r)
         self.display_image_draw_client.call(int(cx), int(cy), a, b)
-        
+        time.sleep(0.01)
         return True
     
 
@@ -250,6 +249,14 @@ rospy.wait_for_service("/fivebarTrailer/robot/time_step")
 time.sleep(0.1)
 
 display = DisplayService()
+
+# Set the drawing color to red
+red_color = 8914952
+display.display_image_color_client.call(red_color)
+time.sleep(0.1)
+
+rospy.Rate(1000)
+
 rospy.spin()
 
 

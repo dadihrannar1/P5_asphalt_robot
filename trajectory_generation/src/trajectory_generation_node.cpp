@@ -11,6 +11,7 @@
 #include <std_msgs/Float32.h>
 #include <new_controller/set_pos.h>
 #include <new_controller/trajectory_polynomial.h>
+#include <vision/Draw_workspace.h>
 #include <webots_ros/get_float.h>
 #include <webots_ros/Float64Stamped.h>
 #include <cmath>
@@ -70,6 +71,8 @@ private:
   float robot_motorL_pos;
   float robot_motorR_pos;
 
+public:
+
   struct forKin_out{
     float x;
     float y;
@@ -89,7 +92,6 @@ private:
     return ee_pos;
   }
 
-public:
   bool new_points = false;
   CrackMapper() : tf2_buffer(ros::Duration(600)), tf2_listener(tf2_buffer){
     //point_sub = n_.subscribe<geometry_msgs::PointStamped>("/points", 1000, &CrackMapper::coordinate_callback, this);
@@ -108,6 +110,7 @@ public:
     if (is_new_coordinate(recieved_point, world_trajectory_coordinates, 0.0008853*2)){
       world_trajectory_coordinates.push_back(recieved_point);
       new_points = true;
+      //ROS_INFO("Set new points to true");
       //ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
     }else{ 
       //ROS_INFO("Received old point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
@@ -116,12 +119,12 @@ public:
 
   // Callback functions for current motor positions
   void posCallbackL(const webots_ros::Float64Stamped::ConstPtr &value){
+    //ROS_INFO("received motor pos");
     robot_motorL_pos = value->data+(M_PI-0.3364441);
   }
   void posCallbackR(const webots_ros::Float64Stamped::ConstPtr &value){
     robot_motorR_pos = -value->data-(M_PI-0.2931572);
   }
-
   //Function returns a deque of all coordinates in the robot workspace (coordinates in mm not m)
   std::deque<geometry_msgs::PointStamped> get_points_in_workspace(){
     //List of current coordinates in robot coordinates
@@ -320,8 +323,6 @@ float adjust_speed(){
 void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle& n, float step_size){
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
   new_controller::set_pos motorSrv; // This is the message for the motor node
-
-  
 }
 
 int main(int argc, char **argv){
@@ -348,6 +349,9 @@ int main(int argc, char **argv){
   webots_ros::get_float time_request;
   time_request.request.ask = true;
 
+  //Service for drawing in the workspace
+  ros::ServiceClient draw_client = n.serviceClient<vision::Draw_workspace>("draw_in_workspace");
+
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
 
   //trajectory service frequency
@@ -361,13 +365,26 @@ int main(int argc, char **argv){
     //float y_coord_offset_start = vehicle_speed * total_travel_time;
     //float y_coord_offset_end = vehicle_speed * travel_time;
     //total_travel_time += travel_time;
+    vision::Draw_workspace drawing_pos_srv;
+    
 
     std::deque<geometry_msgs::PointStamped> points = trajectory_mapper.get_points_in_workspace();
     new_controller::set_pos ee_pos_msg;
     for (int i = 0; i < points.size(); i++){
+      trajectory_mapper.new_points = false;
       ee_pos_msg.request.x = points.at(i).point.x;
       ee_pos_msg.request.y = points.at(i).point.y;
       manipulatorClient.call(ee_pos_msg);
+
+      drawing_pos_srv.request.x = ee_pos_msg.request.x;
+      drawing_pos_srv.request.y = ee_pos_msg.request.y;
+      drawing_pos_srv.request.radius = int(ceil(10/0.9));
+      draw_client.call(drawing_pos_srv);
+      //ROS_INFO("manipulator set to pos x = %f and y = %f", drawing_pos_srv.request.x, drawing_pos_srv.request.y);
+      ros::spinOnce();
+      if(trajectory_mapper.new_points){
+        break;
+      }
     }
     /*
     //Generate polynomium between all received points within workspace
