@@ -351,8 +351,8 @@ int main(int argc, char **argv){
   ros::Subscriber vehicle_speed_sub = n.subscribe<std_msgs::Float32>("/velocity", 10, vehicle_speed_callback);
 
   //Callback for motorpositions from Webot (for forward kinematics)
-  ros::Subscriber posL = n.subscribe("/fivebarTrailer/PosL/value", 1, &CrackMapper::posCallbackL, &trajectory_mapper);
-  ros::Subscriber posR = n.subscribe("/fivebarTrailer/PosR/value", 1, &CrackMapper::posCallbackR, &trajectory_mapper);
+  ros::Subscriber posL = n.subscribe<webots_ros::Float64Stamped>("/fivebarTrailer/PosL/value", 1, &CrackMapper::posCallbackL, &trajectory_mapper);
+  ros::Subscriber posR = n.subscribe<webots_ros::Float64Stamped>("/fivebarTrailer/PosR/value", 1, &CrackMapper::posCallbackR, &trajectory_mapper);
 
   //Timing with webots
   ros::service::waitForService("/fivebarTrailer/robot/get_time");
