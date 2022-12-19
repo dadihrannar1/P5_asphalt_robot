@@ -375,8 +375,8 @@ int main(int argc, char **argv){
     std::deque<geometry_msgs::PointStamped> points = trajectory_mapper.get_points_in_workspace();
 
     //Set vehicle speed
-    vehicle_speed_msg.request.value = trajectory_mapper.adjust_speed(points);
-    vehicleSpeedClient.call(vehicle_speed_msg);
+    //vehicle_speed_msg.request.value = trajectory_mapper.adjust_speed(points);
+    //vehicleSpeedClient.call(vehicle_speed_msg);
 
     float y_offset = 0.0;
     float start_time = current_time;
