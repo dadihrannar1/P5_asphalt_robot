@@ -307,6 +307,18 @@ public:
     }
     return full_combined_trajectory;
   }
+
+  //Calculate neccesary vehicle speed (m/s) from list of coordinates it needs to reach
+  float adjust_speed(std::deque<geometry_msgs::PointStamped> crack_points){
+    float travel_length = 0.0;
+    for (int i = 1; i < crack_points.size(); i++){
+      //Calculate distance bewteen crack_points
+      float travel_length = sqrt(pow(crack_points.at(i).point.x - crack_points.at(i-1).point.x, 2) + pow(crack_points.at(i).point.y - crack_points.at(i-1).point.y, 2));
+    }
+    //Calculate max vehicle speed (mm/s) 
+    float vehicle_speed = 1000/(max_operating_velocity/travel_length);
+  return vehicle_speed;
+  }
 };
 
 //Callback to receive the current trailer speed from the display node
@@ -318,17 +330,7 @@ void vehicle_speed_callback(const std_msgs::Float32::ConstPtr &speed_msg){
   ROS_INFO("Trajectory: Vehicle speed is %f", vehicle_speed);
 }
 
-//Calculate neccesary vehicle speed (m/s) from list of coordinates it needs to reach
-  float adjust_speed(std::deque<geometry_msgs::PointStamped> crack_points){
-    float travel_length = 0.0;
-    for (int i = 1; i < crack_points.size(); i++){
-      //Calculate distance bewteen crack_points
-      float travel_length = sqrt(pow(crack_points.at(i).point.x - crack_points.at(i-1).point.x, 2) + pow(crack_points.at(i).point.y - crack_points.at(i-1).point.y, 2));
-    }
-    //Calculate max vehicle speed (mm/s) 
-    float vehicle_speed = 1000/(max_operating_velocity/travel_length);
-  return vehicle_speed;
-  }
+
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
@@ -359,7 +361,7 @@ int main(int argc, char **argv){
 
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
   new_controller::set_pos ee_pos_msg;
-  ros::ServiceClient vehicleSpeedClient = n.serviceClient<new_controller::set_float>("set_display_velocity");
+  ros::ServiceClient vehicleSpeedClient = n.serviceClient<webots_ros::set_float>("set_display_velocity");
   webots_ros::set_float vehicle_speed_msg;
 
   //trajectory service frequency
@@ -379,8 +381,8 @@ int main(int argc, char **argv){
     std::deque<geometry_msgs::PointStamped> points = trajectory_mapper.get_points_in_workspace();
 
     //Set vehicle speed
-    vehicle_speed_msg.request.value = trajectory_mapper.calculate_new_speed(points);
-    vehicleSpeedClient.call(vehicleSpeed_msg);
+    vehicle_speed_msg.request.value = trajectory_mapper.adjust_speed(points);
+    vehicleSpeedClient.call(vehicle_speed_msg);
     
     for (int i = 0; i < points.size(); i++){
       trajectory_mapper.new_points = false;
