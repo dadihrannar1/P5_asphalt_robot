@@ -189,6 +189,11 @@ void simulation_ready_callback(const std_msgs::Bool::ConstPtr& ready_state){
     simulation_readystate = ready_state->data;
 }
 
+//Callback to receive the current time from webots
+float current_time = 0.0;
+void webots_time_callback(const std_msgs::Float32::ConstPtr &time){
+  current_time = time->data;
+}
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "odometry_publisher");
@@ -240,11 +245,9 @@ int main(int argc, char** argv){
     //Wait for ekf to launch
     //ros::service::waitForService("robot_pose_ekf/get_status")
 
-    //Service for timing with webots
+    //Timing with webots
     ros::service::waitForService("/fivebarTrailer/robot/get_time");
-    ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/robot/get_time");
-    webots_ros::get_float time_request;
-    time_request.request.ask = true;
+    ros::Subscriber time_sub = n.subscribe<std_msgs::Float32>("/webots_time", 1 , webots_time_callback);
 
     // Set display_state service
     ros::ServiceClient display_state_client = n.serviceClient<webots_ros::set_bool>("/set_display_state");
@@ -256,13 +259,6 @@ int main(int argc, char** argv){
         ros::spinOnce();
     }
     display_state_client.call(display_state_request);
-    
-    //Get initial time
-    //float previous_time;
-    //if(time_client.call(time_request)){
-    //    previous_time = time_request.response.value;
-    //}
-    //else{exit(420);}
 
     //Iterate through the recorded data
     for(int i = 0; i < recorded_data.encoder1.size(); i++) {
@@ -271,8 +267,7 @@ int main(int argc, char** argv){
             exit(0);
         }
 
-        time_client.call(time_request);
-        float previous_time = time_request.response.value;
+        float previous_time = current_time;
         
         //Round timestamp to 3 digit precision
         int seconds = int(std::round(previous_time));
@@ -307,11 +302,8 @@ int main(int argc, char** argv){
 
         //Wait until the next recorded timestamp from the arduino data
         if(!vehicle_speed_adjusted){
-            time_client.call(time_request);
-            float current_time = time_request.response.value;
             while(current_time < previous_time + float(recorded_data.time[i])/1000){
-                time_client.call(time_request);
-                current_time = time_request.response.value;
+                ros::spinOnce();
             }
         }
         else{
@@ -319,11 +311,8 @@ int main(int argc, char** argv){
             float time_to_next_encoder_tick = (float(recorded_data.encoder1[i]) * 0.38*M_PI/100) / vehicle_speed;
 
             //Wait until calculated time
-            time_client.call(time_request);
-            float current_time = time_request.response.value;
             while(current_time < previous_time + time_to_next_encoder_tick){
-                time_client.call(time_request);
-                current_time = time_request.response.value;
+                ros::spinOnce();
             }
         }
     }
