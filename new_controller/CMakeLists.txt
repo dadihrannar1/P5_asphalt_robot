@@ -88,6 +88,15 @@ target_link_libraries(manipulator
 )
 
 
+add_executable(time_client src/time_server_node.cpp)
+
+add_dependencies(time_client new_controller_generate_messages_cpp)
+
+
+target_link_libraries(time_client
+	${catkin_LIBRARIES} ${LIBRARIES}
+)
+
 
 #add_executable(display_test controllers/crack_movement.cpp)
 
@@ -103,8 +112,8 @@ target_link_libraries(manipulator
 ## Install ##
 #############
 
-#install(TARGETS display_test
-#       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+install(TARGETS time_client
+       RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(TARGETS manipulator
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

@@ -13,6 +13,7 @@
 
     <arg name="auto_close" default="false" doc="Startup mode"/>
     <node name="manipulator" pkg="new_controller" type="manipulator" output="screen" required="$(arg auto_close)" args="--wait-for-param /Image_path"/>
+    <node name="get_time_client" pkg="new_controller" type="time_client" output="screen" required="$(arg auto_close)"/>
     <node name="webots_display" pkg="vision" type="display.py" output="screen" required="$(arg auto_close)" args="--wait-for-param /Image_path"/>
     <!--node name="display_test" pkg="new_controller" type="display_test" required="$(arg auto_close)"/-->
 
