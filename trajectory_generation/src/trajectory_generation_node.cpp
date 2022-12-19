@@ -12,6 +12,7 @@
 #include <new_controller/set_pos.h>
 #include <new_controller/trajectory_polynomial.h>
 #include <webots_ros/get_float.h>
+#include <webots_ros/set_float.h>
 #include <webots_ros/Float64Stamped.h>
 #include <cmath>
 #include <deque>
@@ -45,7 +46,13 @@ private:
   float robot_x_min = (L0/2-500);
   float robot_x_max = (L0/2+500);
   float robot_y_min = abs(L1-L2);
-  float robot_y_max = (abs(L1-L2)+1000);  PolynomialCoefficients generate_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
+  float robot_y_max = (abs(L1-L2)+1000);
+  float workspace_length = robot_y_max - robot_y_min;
+
+  //Maximum velocity in either x or y direction (mm/s)
+  float max_operating_velocity = 305*10; //TODO this does not need to be static as it varies throughout the workspace
+  
+  PolynomialCoefficients generate_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
     PolynomialCoefficients polynomial;
     //std::cout << "Polynomial generated: " << start_pos << " " << end_pos << " " << start_velocity << " " << end_velocity << std::endl;
     polynomial.a0 = start_pos;
@@ -96,7 +103,8 @@ public:
   }
 
   //List of current points in world coordinates
-  std::deque<geometry_msgs::PointStamped> world_trajectory_coordinates;
+  std::deque<geometry_msgs::PointStamped> world_frame_coordinates;
+  std::deque<geometry_msgs::PointStamped> robot_frame_coordinates;
 
   void coordinate_callback(const geometry_msgs::PointStamped::ConstPtr &coordinate){
     //Add trajectory coordinate to the back of the list
@@ -105,8 +113,8 @@ public:
     recieved_point.point = coordinate -> point;
 
     //Check to see if the point is already in the list
-    if (is_new_coordinate(recieved_point, world_trajectory_coordinates, 0.0008853*2)){
-      world_trajectory_coordinates.push_back(recieved_point);
+    if (is_new_coordinate(recieved_point, world_frame_coordinates, 0.0008853*2)){
+      world_frame_coordinates.push_back(recieved_point);
       new_points = true;
       //ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
     }else{ 
@@ -128,14 +136,14 @@ public:
     std::deque<geometry_msgs::PointStamped> points_in_workspace = {};
 
     //Transform coordinates from world coordinates to robot coordinates
-    for(int i = 0; i < world_trajectory_coordinates.size(); i++){
+    for(int i = 0; i < world_frame_coordinates.size(); i++){
       geometry_msgs::PointStamped point_in_robot_frame;
 
       try{
         geometry_msgs::TransformStamped current_robot_transform = tf2_buffer.lookupTransform("robot_frame", "world_frame", ros::Time(0));
 
         //Apply transform to points
-        tf2::doTransform(world_trajectory_coordinates.at(i), point_in_robot_frame, current_robot_transform);
+        tf2::doTransform(world_frame_coordinates.at(i), point_in_robot_frame, current_robot_transform);
         
         //Transform distances from m to mm
         point_in_robot_frame.point.x = point_in_robot_frame.point.x*1000;
@@ -149,7 +157,7 @@ public:
         else {
           //coordinate is within robot frame
           points_in_workspace.push_back(point_in_robot_frame);
-          world_trajectory_coordinates.erase(world_trajectory_coordinates.begin() + i);
+          world_frame_coordinates.erase(world_frame_coordinates.begin() + i);
 
           //TODO: What if the coordinate is already fixed? How do we remove them from the world trajectory?
         }
@@ -161,7 +169,7 @@ public:
     return points_in_workspace;
   }
   
-
+  //Method to generate trajectory polynomial (Currently UNUSED in this implementation, as webots is slow)
   std::deque<TrajectoryCombinedPoly> generate_trajectory(float vehicle_speed){
     //List of current coordinates in robot coordinates
     std::deque<geometry_msgs::PointStamped> robot_trajectory_coordinates;
@@ -176,14 +184,14 @@ public:
     robot_trajectory_coordinates.push_back(start_pos);
 
     //Transform coordinates from world coordinates to robot coordinates
-    for(int i = 0; i < world_trajectory_coordinates.size(); i++){
+    for(int i = 0; i < world_frame_coordinates.size(); i++){
       geometry_msgs::PointStamped point_in_robot_frame;
 
       try{
         geometry_msgs::TransformStamped current_robot_transform = tf2_buffer.lookupTransform("robot_frame", "world_frame", ros::Time(0));
 
         //Apply transform to points
-        tf2::doTransform(world_trajectory_coordinates.at(i), point_in_robot_frame, current_robot_transform);
+        tf2::doTransform(world_frame_coordinates.at(i), point_in_robot_frame, current_robot_transform);
         
         //Transform distances from m to mm
         point_in_robot_frame.point.x = point_in_robot_frame.point.x*1000;
@@ -201,7 +209,7 @@ public:
           //TODO: What if the coordinate is already fixed? How do we remove them from the world trajectory?
 
           //Does not work if previous polynomium is not finished by the time the robot calculates poly again
-          //world_trajectory_coordinates.erase(world_trajectory_coordinates.begin() + i); 
+          //world_frame_coordinates.erase(world_frame_coordinates.begin() + i); 
         }
 
       }catch (tf2::TransformException &ex) {
@@ -227,9 +235,6 @@ public:
     for(int i = 0; i < robot_trajectory_coordinates.size()-1; i++){
       geometry_msgs::PointStamped coordinate_1 = robot_trajectory_coordinates.at(i);
       geometry_msgs::PointStamped coordinate_2 = robot_trajectory_coordinates.at(i+1);
-
-      //Maximum velocity in either x or y direction (mm/s)
-      float max_operating_velocity = 305*10; //TODO this does not need to be static as it varies throughout the workspace
 
       //TODO: Calculate travel time as function of travel distance
       // Calculate time to finish
@@ -310,19 +315,17 @@ void vehicle_speed_callback(const std_msgs::Float32::ConstPtr &speed_msg){
   ROS_INFO("Trajectory: Vehicle speed is %f", vehicle_speed);
 }
 
-//calculate neccesary vehicle speed (m/s)
-float adjust_speed(){
-  float vehicle_speed; //TODO: Calculate vehicle speed
+//Calculate neccesary vehicle speed (m/s) from list of coordinates it needs to reach
+  float adjust_speed(std::deque<geometry_msgs::PointStamped> crack_points){
+    float travel_length = 0.0;
+    for (int i = 1; i < crack_points.size(); i++){
+      //Calculate distance bewteen crack_points
+      float travel_length = sqrt(pow(crack_points.at(i).point.x - crack_points.at(i-1).point.x, 2) + pow(crack_points.at(i).point.y - crack_points.at(i-1).point.y, 2));
+    }
+    //Calculate max vehicle speed (mm/s) 
+    float vehicle_speed = 1000/(max_operating_velocity/travel_length);
   return vehicle_speed;
-}
-
-//Thread function for following trajectory
-void trajectory_thread(std::deque<TrajectoryCombinedPoly> polynomial, ros::NodeHandle& n, float step_size){
-  ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
-  new_controller::set_pos motorSrv; // This is the message for the motor node
-
-  
-}
+  }
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
@@ -349,6 +352,9 @@ int main(int argc, char **argv){
   time_request.request.ask = true;
 
   ros::ServiceClient manipulatorClient = n.serviceClient<new_controller::set_pos>("/manipulatorSetPos");
+  new_controller::set_pos ee_pos_msg;
+  ros::ServiceClient vehicleSpeedClient = n.serviceClient<new_controller::set_float>("set_display_velocity");
+  webots_ros::set_float vehicle_speed_msg;
 
   //trajectory service frequency
   float srv_hz = 10;
@@ -363,13 +369,17 @@ int main(int argc, char **argv){
     //total_travel_time += travel_time;
 
     std::deque<geometry_msgs::PointStamped> points = trajectory_mapper.get_points_in_workspace();
-    new_controller::set_pos ee_pos_msg;
+
+    //Set vehicle speed
+    vehicle_speed_msg.request.value = trajectory_mapper.calculate_new_speed(points);
+    vehicleSpeedClient.call(vehicleSpeed_msg);
+    
     for (int i = 0; i < points.size(); i++){
       ee_pos_msg.request.x = points.at(i).point.x;
       ee_pos_msg.request.y = points.at(i).point.y;
       manipulatorClient.call(ee_pos_msg);
     }
-    /*
+    /* UNUSED Webots is too slow
     //Generate polynomium between all received points within workspace
     std::deque<TrajectoryCombinedPoly> trajectory_combined = trajectory_mapper.generate_trajectory(vehicle_speed);
     trajectory_mapper.new_points = false;
