@@ -330,13 +330,17 @@ void vehicle_speed_callback(const std_msgs::Float32::ConstPtr &speed_msg){
   ROS_INFO("Trajectory: Vehicle speed is %f", vehicle_speed);
 }
 
+//Callback to receive the current time from webots
+float current_time = 0.0;
+void webots_time_callback(const std_msgs::Float32::ConstPtr &time){
+  current_time = time->data;
+}
 
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "crack_points_listener");
   ros::NodeHandle n;
   ros::Publisher poly_pub = n.advertise<new_controller::trajectory_polynomial>("trajectory_polynomial", 10);
-  ros::service::waitForService("/fivebarTrailer/robot/get_time");
   //ros::topic::waitForMessage<geometry_msgs::PointStamped>("/points");
 
   CrackMapper trajectory_mapper;
@@ -350,11 +354,9 @@ int main(int argc, char **argv){
   ros::Subscriber posL = n.subscribe("/fivebarTrailer/PosL/value", 1, &CrackMapper::posCallbackL, &trajectory_mapper);
   ros::Subscriber posR = n.subscribe("/fivebarTrailer/PosR/value", 1, &CrackMapper::posCallbackR, &trajectory_mapper);
 
-  //Service for timing with webots
+  //Timing with webots
   ros::service::waitForService("/fivebarTrailer/robot/get_time");
-  ros::ServiceClient time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/robot/get_time");
-  webots_ros::get_float time_request;
-  time_request.request.ask = true;
+  ros::Subscriber time_sub = n.subscribe<std_msgs::Float32>("/webots_time", 1 , webots_time_callback);
 
   //Service for drawing in the workspace
   ros::ServiceClient draw_client = n.serviceClient<vision::Draw_workspace>("draw_in_workspace");
@@ -364,27 +366,24 @@ int main(int argc, char **argv){
   ros::ServiceClient vehicleSpeedClient = n.serviceClient<webots_ros::set_float>("set_display_velocity");
   webots_ros::set_float vehicle_speed_msg;
 
-  //trajectory service frequency
-  float srv_hz = 10;
-
   while (n.ok()){
     ros::spinOnce(); //Spin subscriber once to get new points, vehicle_speed, and end effector positions
-    //float vehicle_speed = adjust_speed();
-
-    //Calculate y offset by vehicle speed
-    //float y_coord_offset_start = vehicle_speed * total_travel_time;
-    //float y_coord_offset_end = vehicle_speed * travel_time;
-    //total_travel_time += travel_time;
     vision::Draw_workspace drawing_pos_srv;
-    
 
+    //Get all point inside the robot workspace
     std::deque<geometry_msgs::PointStamped> points = trajectory_mapper.get_points_in_workspace();
 
     //Set vehicle speed
     vehicle_speed_msg.request.value = trajectory_mapper.adjust_speed(points);
     vehicleSpeedClient.call(vehicle_speed_msg);
-    
+
+    float y_offset = 0.0;
+    float start_time = current_time;
+
     for (int i = 0; i < points.size(); i++){
+      //Calculate y offset by vehicle speed
+      y_offset = (current_time - start_time) * vehicle_speed_msg.request.value * 1000;
+
       trajectory_mapper.new_points = false;
       ee_pos_msg.request.x = points.at(i).point.x;
       ee_pos_msg.request.y = points.at(i).point.y;
