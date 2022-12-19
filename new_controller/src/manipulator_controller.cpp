@@ -32,11 +32,10 @@
 #include <stdio.h>
 
 // Time step for the webots simulation
-#define TIME_STEP 8
+#define TIME_STEP 4
 
 ros::ServiceClient leftMotorClient;
 ros::ServiceClient rightMotorClient;
-ros::ServiceClient time_client;
 
 
 // Global variables for calculatred angles
@@ -97,7 +96,7 @@ int main(int argc, char **argv) {
 
   // Service for retrieving current simulation time
   ros::service::waitForService("/fivebarTrailer/robot/get_time");
-  time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/robot/get_time");
+  //time_client = n.serviceClient<webots_ros::get_float>("/fivebarTrailer/robot/get_time");
   webots_ros::get_float time_request;
   time_request.request.ask = true;
 
@@ -149,6 +148,7 @@ int main(int argc, char **argv) {
     new_controller::set_pos motorSrv;
     ros::spinOnce();
     
+    /*
     // If there is a new polynomial run the while loop
     while(rc.new_polynomial){
       // Set the new_polynomial to false, since i started working on it
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
       }
 
     ros::spinOnce();
-    }
+    }*/
   }
 }
 
