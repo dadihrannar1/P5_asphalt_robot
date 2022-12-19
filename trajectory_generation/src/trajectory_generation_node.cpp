@@ -334,7 +334,7 @@ void vehicle_speed_callback(const std_msgs::Float32::ConstPtr &speed_msg){
 float current_time = 0.0;
 void webots_time_callback(const std_msgs::Float32::ConstPtr &time){
   current_time = time->data;
-  ROS_INFO("Trajectory: Simulation time is %f", current_time);
+  //ROS_INFO("Trajectory: Simulation time is %f", current_time);
 }
 
 
