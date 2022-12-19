@@ -191,10 +191,11 @@ class DisplayService(object):
 
         # Set up the speed so we can move back to the start
         self.vel_motor_client.call(10000)
+        time.sleep(0.1)
         # make the motor go back to start 
         self.pos_motor_client.call(self.start_point)
         # Set the motor speed back to zero
-        time.sleep(0.1)
+        time.sleep(0.5)
         
         self.vel_motor_client.call(0)
 
@@ -203,7 +204,7 @@ class DisplayService(object):
         # Calculate starting speed
         start_speed = ((encoder1[starting_image+1]*self.tickSize)/(timer[starting_image+1]-timer[starting_image])) # m/s
         self.curr_vel = start_speed
-        self.curr_vel = 0.277778
+        self.curr_vel = 0.277778/5
         self.vel_motor_client.call(self.curr_vel)
         self.vel_publisher.publish(self.curr_vel)
         self.pos_motor_client.call(20)

@@ -20,10 +20,11 @@ def vehicle_vel_callback(msg):
     vehicle_speed = msg.data
     print(f"Vision: vehicle speed is {vehicle_speed}")
 
+simulation_time = 0.0
 def Time_callback(Time):
     global simulation_time
     simulation_time = Time.data
-    print(f"Vision: simulation time is {simulation_time}")
+    #print(f"Vision: simulation time is {simulation_time}")
 
 
 # Function for adding angles bounded to [0, 2*PI[
@@ -65,7 +66,7 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     if(end_image<start_image):
         exit("Vision_node: Invalid launch input end<start")
 
-    r = rospy.Rate(10000)  # 100hz used for sending coordinates
+    r = rospy.Rate(1000)  # 100hz used for sending coordinates
 
     # Transform listener for getting transforms from TF
     tf_buffer = tf2_ros.Buffer(rospy.Time(10000))
@@ -158,16 +159,18 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
     print("Vision: Sending images to the simulation\n")
     image_stitch = rospy.ServiceProxy('/input_display', Display_input)
     image_stitch.call(request)
+    time.sleep(0.1)
 
     print('Started vision_pub')
     for i in range(start_index, end_index):
+        # Webots timing
+        previous_time = simulation_time
+        print(f"start time: { simulation_time}")
+
         # Fetch trajectory
         path = paths[i]
         timestamp = timestamps[i]
         angle, traveled_x, traveled_y = offsets[i]  # swapped x and y to move in right direction TODO: make this change earlier in the pipeline
-
-        # Wait for webots timing
-        previous_time = simulation_time
         
         # Calculate world pose
         traveled_x = 0 #TODO: fix the incorrect translation and rotation from the image aligner
@@ -260,19 +263,20 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
             print(f"Vision: {exception}")
             # For first transform publish again to ensure transform is available for first point
             #r.sleep()
-            continue
+            pass
 
         if vehicle_speed == 0.0:
             # Wait to get first image for as long as the arduino recorded
             #print(f"Vision: Time to wait = {timestamp/1000}seconds")
             while simulation_time < previous_time + timestamp/1000:
+                print(f"Vision: Time to next image = {previous_time + timestamp/1000}")
                 #curr_time = simulation_time_client.call(True)
                 pass
             #previous_time = simulation_time + timestamp/1000
         else:
             # Convert encoder ticks and desired vehicle speed to wait time for next image
             time_to_next_image = traveled_y*PIXEL_SIZE / vehicle_speed
-
+            print(f"Vision: Time to next image = {previous_time + time_to_next_image}")
             # Wait to get first image for as long as the vehicle velocity demands
             while simulation_time < previous_time + time_to_next_image:
                 #curr_time = simulation_time_client.call(True)
