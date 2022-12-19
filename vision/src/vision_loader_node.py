@@ -168,31 +168,6 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
 
         # Wait for webots timing
         previous_time = simulation_time
-        #rint(f"Vision: Time before waiting = {previous_time}")
-        if vehicle_speed == 0.0:
-            # Wait to get first image for as long as the arduino recorded
-            #print(f"Vision: Time to wait = {timestamp/1000}seconds")
-            while simulation_time < previous_time + timestamp/1000:
-                #curr_time = simulation_time_client.call(True)
-                time.sleep(0.008)
-                pass
-            previous_time = simulation_time + timestamp/1000
-        else:
-            # Convert encoder ticks and desired vehicle speed to wait time for next image
-            time_to_next_image = traveled_y*PIXEL_SIZE / vehicle_speed
-
-            # Wait to get first image for as long as the vehicle velocity demands
-            while simulation_time < previous_time + time_to_next_image:
-                #curr_time = simulation_time_client.call(True)
-                time.sleep(0.008)
-                pass
-            previous_time = simulation_time + time_to_next_image
-
-        # Get timestamp for tf
-        secs = simulation_time
-        #print(f"Vision: Time after waiting = {secs}\n--------------------------------\n")
-
-        #print(f"Vision: X_travel = {traveled_x}, Y_travel = {traveled_y}")
         
         # Calculate world pose
         traveled_x = 0 #TODO: fix the incorrect translation and rotation from the image aligner
@@ -211,8 +186,8 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
         #print(f"Vision: X_pos = {world_pose_x_base}, Y_pos = {world_pose_y_base}")
 
         # Convert from seconds (float) to seconds and nanoseconds
-        nanoseconds = int(secs*1e9%1e9)
-        seconds = int(secs*1e9//1e9)
+        nanoseconds = int(previous_time*1e9%1e9)
+        seconds = int(previous_time*1e9//1e9)
 
         # Publish transform from camera
         tf_msg = nav_msgs.Odometry()
@@ -286,6 +261,23 @@ def vision_pub(filenames, paths, timestamps, offsets, image_folder_path):
             # For first transform publish again to ensure transform is available for first point
             #r.sleep()
             continue
+
+        if vehicle_speed == 0.0:
+            # Wait to get first image for as long as the arduino recorded
+            #print(f"Vision: Time to wait = {timestamp/1000}seconds")
+            while simulation_time < previous_time + timestamp/1000:
+                #curr_time = simulation_time_client.call(True)
+                pass
+            #previous_time = simulation_time + timestamp/1000
+        else:
+            # Convert encoder ticks and desired vehicle speed to wait time for next image
+            time_to_next_image = traveled_y*PIXEL_SIZE / vehicle_speed
+
+            # Wait to get first image for as long as the vehicle velocity demands
+            while simulation_time < previous_time + time_to_next_image:
+                #curr_time = simulation_time_client.call(True)
+                pass
+            #previous_time = simulation_time + time_to_next_image
 
 if __name__ == "__main__":
     rospy.init_node('vision_publisher')
