@@ -387,11 +387,11 @@ int main(int argc, char **argv){
 
       trajectory_mapper.new_points = false;
       ee_pos_msg.request.x = points.at(i).point.x;
-      ee_pos_msg.request.y = points.at(i).point.y;
+      ee_pos_msg.request.y = points.at(i).point.y + y_offset;
       manipulatorClient.call(ee_pos_msg);
 
       drawing_pos_srv.request.x = ee_pos_msg.request.x;
-      drawing_pos_srv.request.y = ee_pos_msg.request.y;
+      drawing_pos_srv.request.y = ee_pos_msg.request.y + y_offset;
       drawing_pos_srv.request.radius = int(ceil(10/0.9));
       draw_client.call(drawing_pos_srv);
       //ROS_INFO("manipulator set to pos x = %f and y = %f", drawing_pos_srv.request.x, drawing_pos_srv.request.y);
