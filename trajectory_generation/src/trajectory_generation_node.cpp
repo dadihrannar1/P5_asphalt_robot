@@ -50,7 +50,7 @@ private:
   float workspace_length = robot_y_max - robot_y_min;
 
   //Maximum velocity in either x or y direction (mm/s)
-  float max_operating_velocity = 305*10; //TODO this does not need to be static as it varies throughout the workspace
+  float max_operating_velocity = 2847; //TODO this does not need to be static as it varies throughout the workspace
   
   PolynomialCoefficients generate_polynomial(float start_pos, float end_pos, float start_velocity, float end_velocity, float travel_time){
     PolynomialCoefficients polynomial;
