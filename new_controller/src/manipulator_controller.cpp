@@ -32,7 +32,7 @@
 #include <stdio.h>
 
 // Time step for the webots simulation
-#define TIME_STEP 4
+#define TIME_STEP 8
 
 ros::ServiceClient leftMotorClient;
 ros::ServiceClient rightMotorClient;

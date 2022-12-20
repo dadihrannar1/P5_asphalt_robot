@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   // Create a publisher to the "webots_time" topic with message type std_msgs::Float32
   ros::Publisher time_pub = n.advertise<std_msgs::Float32>("webots_time", 1000);
 
-  ros::Rate loop_rate(10); // 100 Hz
+  ros::Rate loop_rate(5); // 10 Hz
 
   while (ros::ok())
   {

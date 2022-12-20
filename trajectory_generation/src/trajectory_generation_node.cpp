@@ -46,7 +46,7 @@ private:
   //Bounds for robot workspace in robot frame (in m)
   float robot_x_min = (L0/2-500);
   float robot_x_max = (L0/2+500);
-  float robot_y_min = abs(L1-L2);
+  float robot_y_min = abs(L1-L2)+100;
   float robot_y_max = (abs(L1-L2)+1000);
   float workspace_length = robot_y_max - robot_y_min;
 
@@ -115,9 +115,9 @@ public:
     recieved_point.point = coordinate -> point;
 
     //Check to see if the point is already in the list
-    if (is_new_coordinate(recieved_point, world_frame_coordinates, 0.0008853*2)){
+    if (is_new_coordinate(recieved_point, world_frame_coordinates, 0.0008853*2*10)){
       world_frame_coordinates.push_back(recieved_point);
-      new_points = true;
+      //new_points = true;
       //ROS_INFO("Set new points to true");
       //ROS_INFO("Received new point: (%f, %f)", recieved_point.point.x, recieved_point.point.y);
     }else{ 
@@ -208,11 +208,13 @@ public:
         else {
           //coordinate is within robot frame
           robot_trajectory_coordinates.push_back(point_in_robot_frame);
+          //if(point_in_robot_frame.point.y < robot_y_max-200){new_points = true;}
 
           //TODO: What if the coordinate is already fixed? How do we remove them from the world trajectory?
 
           //Does not work if previous polynomium is not finished by the time the robot calculates poly again
           //world_frame_coordinates.erase(world_frame_coordinates.begin() + i); 
+          new_points = true;
         }
 
       }catch (tf2::TransformException &ex) {
@@ -388,17 +390,17 @@ int main(int argc, char **argv){
       trajectory_mapper.new_points = false;
       ee_pos_msg.request.x = points.at(i).point.x;
       ee_pos_msg.request.y = points.at(i).point.y + y_offset;
-      manipulatorClient.call(ee_pos_msg);
+      //manipulatorClient.call(ee_pos_msg);
 
       drawing_pos_srv.request.x = ee_pos_msg.request.x;
       drawing_pos_srv.request.y = ee_pos_msg.request.y + y_offset;
-      drawing_pos_srv.request.radius = int(ceil(10/0.9));
+      drawing_pos_srv.request.radius = 11;
       draw_client.call(drawing_pos_srv);
       //ROS_INFO("manipulator set to pos x = %f and y = %f", drawing_pos_srv.request.x, drawing_pos_srv.request.y);
-      ros::spinOnce();
-      if(trajectory_mapper.new_points){
-        break;
-      }
+      //ros::spinOnce();
+      //if(trajectory_mapper.new_points){
+      //  break;
+    //}
     }
     /* UNUSED Webots is too slow
     //Generate polynomium between all received points within workspace

@@ -13,6 +13,8 @@ from vision.srv import Draw_workspace
 from webots_ros.srv import display_image_load, display_image_loadRequest
 from webots_ros.srv import display_image_paste, display_image_pasteRequest
 from webots_ros.srv import display_draw_oval, display_draw_ovalRequest
+from webots_ros.srv import display_image_save, display_image_saveRequest
+from webots_ros.srv import display_image_copy, display_image_copyRequest, display_image_copyResponse
 from webots_ros.srv import set_float, set_floatRequest
 from webots_ros.srv import set_int
 from webots_ros.msg import Float64Stamped
@@ -63,6 +65,7 @@ class DisplayService(object):
         self.encpos = msg.data
 
         if self.encpos >= self.image_edge:
+
             # Set up the speed so we can move back to the start
             self.vel_motor_client.call(10000)
 
@@ -113,6 +116,8 @@ class DisplayService(object):
         self.display_image_paste_client  = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_paste", display_image_paste)
         self.display_image_draw_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/fill_oval", display_draw_oval)
         self.display_image_color_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/set_color", set_int)
+        self.display_image_save_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_save", display_image_save)
+        self.display_image_copy_client = rospy.ServiceProxy(f"{self.model_name}/CrackDisplay1/image_save", display_image_copy)
 
         # start the encoder and set a subscriber
         encService = rospy.ServiceProxy(f"{self.model_name}/position_sensor1/enable", set_int)
@@ -127,7 +132,7 @@ class DisplayService(object):
         # Set indication that the display is busy
         self.state_publisher.publish(False)
 
-        path = request.path
+        self.path = request.path
         n_images = request.amount_of_images
         starting_image = request.start_image
 
@@ -138,7 +143,7 @@ class DisplayService(object):
             map_y = pickle.load(file)
 
         # Open the json file and extract data
-        with open(f"{path}/image_details.json") as json_file:
+        with open(f"{self.path}/image_details.json") as json_file:
             data = json.load(json_file)
             filename = data[0]
             timer = [int(s) for s in data[1]]  # Converting string to int
@@ -151,12 +156,12 @@ class DisplayService(object):
         # Go through the requested amount of images
         for j in range(starting_image,starting_image+n_images):
             img_name = filename[j].split("/")[-1]
-            img = cv2.imread(f"{path}/{img_name}")
+            img = cv2.imread(f"{self.path}/{img_name}")
             frame_corrected = cv2.remap(img, map_x, map_y, cv2.INTER_LINEAR) # Remove the distortion
             top_left_corner = (100, 100)
             bottom_right_corner = (frame_corrected.shape[1] - 100, frame_corrected.shape[0] - 100) # remove edges
             images.append(frame_corrected[top_left_corner[1]:bottom_right_corner[1], top_left_corner[0]:bottom_right_corner[0]])
-            transforms.append(encoder1[j+1]*self.tickPixel) # save the encoder position
+            transforms.append((encoder1[j+1]*self.tickPixel+encoder2[j+1]*self.tickPixel)/2) # save the encoder position
         #transforms.pop(-1) # Remove the last encoder position since we don't are about the image after it
         #transforms.append("a")
 
@@ -185,9 +190,9 @@ class DisplayService(object):
 
         # import the image into webots
         response = self.display_image_load_client.call(image_path)
-        request = display_image_pasteRequest()
-        request.ir = response.ir
-        self.display_image_paste_client.call(request)
+        self.request = display_image_pasteRequest()
+        self.request.ir = response.ir
+        self.display_image_paste_client.call(self.request)
 
         # Set up the speed so we can move back to the start
         self.vel_motor_client.call(10000)
@@ -204,7 +209,7 @@ class DisplayService(object):
         # Calculate starting speed
         start_speed = ((encoder1[starting_image+1]*self.tickSize)/(timer[starting_image+1]-timer[starting_image])) # m/s
         self.curr_vel = start_speed
-        self.curr_vel = 0.277778/5
+        self.curr_vel = 0.277778
         self.vel_motor_client.call(self.curr_vel)
         self.vel_publisher.publish(self.curr_vel)
         self.pos_motor_client.call(20)
@@ -245,6 +250,7 @@ class DisplayService(object):
 ##### Main loop #####
 
 rospy.init_node('webots_display')
+rospy.Rate(100)
 # Wait for the simulation controller.
 rospy.wait_for_service("/fivebarTrailer/robot/time_step")
 time.sleep(0.1)
